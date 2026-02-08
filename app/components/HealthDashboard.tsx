@@ -34,6 +34,7 @@ interface HealthDashboardProps {
   health: SystemHealth;
   onConnect?: () => void;
   onDisconnect?: () => void;
+  compact?: boolean; // true for mobile tab, false for desktop modal
 }
 
 function formatUptime(ms: number): string {
@@ -101,7 +102,7 @@ function HealthCard({
   );
 }
 
-export default function HealthDashboard({ health, onConnect, onDisconnect }: HealthDashboardProps) {
+export default function HealthDashboard({ health, onConnect, onDisconnect, compact = false }: HealthDashboardProps) {
   const connectionDetails = useMemo(() => {
     const isConnected = health.connection.wsStatus === "connected";
     const uptime = formatUptime(health.connection.uptimeMs);
@@ -139,8 +140,8 @@ export default function HealthDashboard({ health, onConnect, onDisconnect }: Hea
   }, [health.logs]);
 
   return (
-    <div className="space-y-4">
-      <div className="grid grid-cols-4 gap-3">
+    <div className={`space-y-4 ${compact ? "" : ""}`}>
+      <div className={compact ? "grid grid-cols-2 gap-2" : "grid grid-cols-4 gap-3"}>
         {/* Connection card as button if callbacks provided */}
         {(onConnect || onDisconnect) ? (
           <button
@@ -151,7 +152,9 @@ export default function HealthDashboard({ health, onConnect, onDisconnect }: Hea
                 onConnect?.();
               }
             }}
-            className={`flex-1 p-4 rounded-lg border transition-all cursor-pointer ${
+            className={`flex-1 rounded-lg border transition-all cursor-pointer ${
+              compact ? "p-2" : "p-4"
+            } ${
               health.connection.status === "healthy"
                 ? "border-green-500/40 bg-white/5 hover:bg-white/10"
                 : health.connection.status === "degraded"
@@ -161,7 +164,7 @@ export default function HealthDashboard({ health, onConnect, onDisconnect }: Hea
             title={`Click to ${health.connection.wsStatus === "connected" ? "disconnect" : "connect"}`}
             aria-label={`Connection status: ${connectionDetails}`}
           >
-            <div className="flex items-center gap-2 mb-2">
+            <div className={`flex items-center gap-2 ${compact ? "mb-1" : "mb-2"}`}>
               <div
                 className={`w-2 h-2 rounded-full ${
                   health.connection.status === "healthy"
@@ -172,7 +175,9 @@ export default function HealthDashboard({ health, onConnect, onDisconnect }: Hea
                 }`}
               />
               <h3
-                className={`text-sm font-mono font-bold ${
+                className={`font-mono font-bold ${
+                  compact ? "text-xs" : "text-sm"
+                } ${
                   health.connection.status === "healthy"
                     ? "text-green-400"
                     : health.connection.status === "degraded"
@@ -180,11 +185,13 @@ export default function HealthDashboard({ health, onConnect, onDisconnect }: Hea
                       : "text-white/40"
                 }`}
               >
-                Connection
+                {compact ? "Conn" : "Connection"}
               </h3>
             </div>
             <p
-              className={`text-xs font-mono ${
+              className={`font-mono ${
+                compact ? "text-[10px]" : "text-xs"
+              } ${
                 health.connection.status === "healthy"
                   ? "text-green-400/70"
                   : health.connection.status === "degraded"

@@ -8,10 +8,13 @@ import PaletteSwitcher from "./PaletteSwitcher";
 import HackerLog from "./HackerLog";
 import Logo from "./Logo";
 import FadeIn from "./FadeIn";
-import CapabilitiesList from "./CapabilitiesList";
 import DocModal from "./DocModal";
+import { MobileBottomSheet } from "./MobileBottomSheet";
 import { ChatMessage } from "./MessageBubble";
 import type { SystemHealth } from "./HealthDashboard";
+import type { LogEntry } from "./HackerLog";
+import { useViewport } from "@/app/hooks/useViewport";
+import { usePerformanceMode } from "@/app/hooks/usePerformanceMode";
 
 // Fire-and-forget save — never blocks the conversation
 function persistTurn(role: "user" | "agent", text: string, onWriteSuccess?: (layer: "redis" | "local-fs") => void) {
@@ -49,6 +52,8 @@ export default function VoiceAgent() {
   const [memoryTurns, setMemoryTurns] = useState(0);
   const [memoryWriteSuccess, setMemoryWriteSuccess] = useState(false);
   const [logStats, setLogStats] = useState({ errorCount: 0, warningCount: 0 });
+  const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1); // For shared font size control
+  const [logs, setLogs] = useState<LogEntry[]>([]); // Shared logs state for mobile
 
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
@@ -61,6 +66,10 @@ export default function VoiceAgent() {
   const commandPressedRef = useRef(false);
   const commandMutedRef = useRef(false);
   const lastCommandPressRef = useRef(0);
+
+  // Responsive hooks
+  const { isMobile } = useViewport();
+  const { isLowPerformance } = usePerformanceMode();
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -76,6 +85,19 @@ export default function VoiceAgent() {
   useEffect(() => {
     const log = (window as any).hackerLog;
     log?.(`[INIT] starting with empty chat display`, "debug");
+  }, []);
+
+  // Sync logs from window to state (for mobile tab)
+  // HackerLog manages its own state, but we need access for mobile
+  useEffect(() => {
+    // Expose a function to update shared logs state
+    (window as any).setSharedLogs = (newLogs: LogEntry[]) => {
+      setLogs(newLogs);
+    };
+
+    return () => {
+      delete (window as any).setSharedLogs;
+    };
   }, []);
 
   const conversation = useConversation({
@@ -542,6 +564,8 @@ This is context from our previous conversation. Remember these details when resp
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <FadeIn />
+
+      {/* Orb - always shown, sizing changes based on viewport */}
       <OrbBackground
         palette={palette}
         inputVolume={inputVolume}
@@ -549,23 +573,58 @@ This is context from our previous conversation. Remember these details when resp
         isSpeaking={conversation.isSpeaking}
         isConnected={connectionStatus === "connected"}
         onPaletteChange={setPalette}
+        isMobile={isMobile}
+        lowPerformance={isLowPerformance}
       />
-      <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
+
+      {/* Logo - always shown */}
       <Logo />
-      <CapabilitiesList />
-      <GlassChat
-        messages={messages}
-        status={connectionStatus}
-        isSpeaking={conversation.isSpeaking}
-        micMuted={micMuted}
-        onConnect={handleConnect}
-        onDisconnect={handleDisconnect}
-        onSendMessage={handleSendMessage}
-        onToggleMic={handleToggleMic}
-        onClearMessages={handleClearMessages}
-        onChatOpenChange={setIsChatOpen}
-      />
-      <HackerLog palette={palette} onPaletteChange={setPalette} connectionStatus={connectionStatus} />
+
+      {/* Desktop Layout (>= 1024px) */}
+      {!isMobile && (
+        <>
+          <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
+          <GlassChat
+            messages={messages}
+            status={connectionStatus}
+            isSpeaking={conversation.isSpeaking}
+            micMuted={micMuted}
+            onConnect={handleConnect}
+            onDisconnect={handleDisconnect}
+            onSendMessage={handleSendMessage}
+            onToggleMic={handleToggleMic}
+            onClearMessages={handleClearMessages}
+            onChatOpenChange={setIsChatOpen}
+          />
+          <HackerLog
+            palette={palette}
+            onPaletteChange={setPalette}
+            connectionStatus={connectionStatus}
+          />
+        </>
+      )}
+
+      {/* Mobile Layout (< 1024px) */}
+      {isMobile && (
+        <MobileBottomSheet
+          messages={messages}
+          status={connectionStatus}
+          isSpeaking={conversation.isSpeaking}
+          micMuted={micMuted}
+          logs={logs}
+          health={health}
+          fontSizeMultiplier={fontSizeMultiplier}
+          onConnect={handleConnect}
+          onDisconnect={handleDisconnect}
+          onSendMessage={handleSendMessage}
+          onToggleMic={handleToggleMic}
+          onClearMessages={handleClearMessages}
+          onFontSizeChange={setFontSizeMultiplier}
+          lowPerformance={isLowPerformance}
+        />
+      )}
+
+      {/* Modals - shown on all layouts */}
       <DocModal
         isOpen={docModalOpen}
         onClose={() => setDocModalOpen(false)}

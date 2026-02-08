@@ -72,7 +72,12 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
     // Expose logger to window for use throughout the app
     (window as any).hackerLog = (message: string, type: "info" | "success" | "error" | "debug" = "info") => {
       const timestamp = new Date().toLocaleTimeString();
-      setLogs((prev) => [...prev.slice(-49), { timestamp, message, type }]); // Keep last 50 logs
+      setLogs((prev) => {
+        const newLogs = [...prev.slice(-49), { timestamp, message, type }]; // Keep last 50 logs
+        // Sync to shared state for mobile if available
+        (window as any).setSharedLogs?.(newLogs);
+        return newLogs;
+      });
       console.log(`[${timestamp}] ${message}`);
     };
 

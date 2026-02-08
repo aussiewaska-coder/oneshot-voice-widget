@@ -10,6 +10,8 @@ interface OrbBackgroundProps {
   isSpeaking: boolean;
   isConnected: boolean;
   onPaletteChange?: (palette: number) => void;
+  isMobile?: boolean;
+  lowPerformance?: boolean;
 }
 
 // Rich contrast palette combinations
@@ -36,6 +38,8 @@ export default function OrbBackground({
   outputVolume,
   isSpeaking,
   onPaletteChange,
+  isMobile = false,
+  lowPerformance = false,
 }: OrbBackgroundProps) {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -108,10 +112,15 @@ export default function OrbBackground({
     onPaletteChange?.(randomPalette);
   };
 
+  // Mobile-specific styling
+  const containerClass = isMobile ? "absolute top-0 left-0 w-full h-[33vh]" : `${styles.container}`;
+  const blurIntensity = lowPerformance ? 20 : isMobile ? 30 : 60;
+
   return (
     <div
-      className={`${styles.container} ${paletteClass} cursor-pointer`}
+      className={`${containerClass} ${paletteClass} cursor-pointer relative`}
       onClick={handleOrbClick}
+      style={isMobile ? { filter: `blur(${blurIntensity / 100}px)` } : undefined}
     >
       <div
         className={styles.blobs}
