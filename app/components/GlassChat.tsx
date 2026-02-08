@@ -15,6 +15,7 @@ interface GlassChatProps {
   onSendMessage: (text: string) => void;
   onToggleMic: () => void;
   onClearMessages: () => void;
+  onChatOpenChange?: (isOpen: boolean) => void;
 }
 
 const PROMPT_PHRASES = [
@@ -40,6 +41,7 @@ export default function GlassChat({
   onSendMessage,
   onToggleMic,
   onClearMessages,
+  onChatOpenChange,
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
@@ -52,6 +54,11 @@ export default function GlassChat({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Notify parent when chat opens/closes
+  useEffect(() => {
+    onChatOpenChange?.(!isCollapsed);
+  }, [isCollapsed, onChatOpenChange]);
 
   // Initialization phase - show initializing for 1-2 seconds
   useEffect(() => {

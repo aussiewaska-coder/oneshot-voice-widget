@@ -35,6 +35,7 @@ export default function VoiceAgent() {
   const [inputVolume, setInputVolume] = useState(0);
   const [outputVolume, setOutputVolume] = useState(0);
   const [micMuted, setMicMuted] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
     "connected" | "disconnected" | "connecting"
   >("disconnected");
@@ -337,6 +338,7 @@ This is context from our previous conversation. Remember these details when resp
         outputVolume={outputVolume}
         isSpeaking={conversation.isSpeaking}
         isConnected={connectionStatus === "connected"}
+        isChatOpen={isChatOpen}
         onPaletteChange={setPalette}
       />
       <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
@@ -351,6 +353,7 @@ This is context from our previous conversation. Remember these details when resp
         onSendMessage={handleSendMessage}
         onToggleMic={handleToggleMic}
         onClearMessages={handleClearMessages}
+        onChatOpenChange={setIsChatOpen}
       />
       <HackerLog palette={palette} onPaletteChange={setPalette} />
     </div>

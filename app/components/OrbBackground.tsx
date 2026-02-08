@@ -9,6 +9,7 @@ interface OrbBackgroundProps {
   outputVolume: number;
   isSpeaking: boolean;
   isConnected: boolean;
+  isChatOpen?: boolean;
   onPaletteChange?: (palette: number) => void;
 }
 
@@ -35,10 +36,18 @@ export default function OrbBackground({
   inputVolume,
   outputVolume,
   isSpeaking,
+  isChatOpen,
   onPaletteChange,
 }: OrbBackgroundProps) {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
+  const [chatOffset, setChatOffset] = useState(0);
+
+  // Adjust orb position when chat opens/closes to keep it centered
+  useEffect(() => {
+    // Chat is 420px + margins, shift orb left when chat opens
+    setChatOffset(isChatOpen ? -100 : 0);
+  }, [isChatOpen]);
 
   // Device orientation (mobile) or mouse movement (desktop) detection
   useEffect(() => {
@@ -116,7 +125,7 @@ export default function OrbBackground({
       <div
         className={styles.blobs}
         style={{
-          transform: `translate(${offsetX}%, ${offsetY}%) scale(${scale})`,
+          transform: `translate(${offsetX + chatOffset}%, ${offsetY}%) scale(${scale})`,
           transition: "transform 2000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }}
       >
