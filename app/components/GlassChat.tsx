@@ -169,86 +169,92 @@ export default function GlassChat({
 
       <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-      {/* ── Input bar ── */}
-      <div className="px-4 py-3.5 flex items-center gap-2">
-        {/* Mic */}
-        <button
-          onClick={onToggleMic}
-          disabled={status !== "connected"}
-          className={`p-2.5 rounded-xl transition-all duration-200 ${
-            micMuted
-              ? "bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20"
-              : "bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08]"
-          } disabled:opacity-15 disabled:cursor-not-allowed`}
-          aria-label={micMuted ? "Unmute" : "Mute"}
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            {micMuted ? (
-              <>
-                <line x1="1" y1="1" x2="23" y2="23" />
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.48-.35 2.15" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </>
-            ) : (
-              <>
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </>
-            )}
-          </svg>
-        </button>
+      {/* ── Input bar (only when connected) ── */}
+      {status === "connected" && (
+        <div className="px-4 py-3.5 flex items-center gap-2">
+          {/* Mic */}
+          <button
+            onClick={onToggleMic}
+            disabled={status !== "connected"}
+            className={`p-2.5 rounded-xl transition-all duration-200 ${
+              micMuted
+                ? "bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20"
+                : "bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08]"
+            } disabled:opacity-15 disabled:cursor-not-allowed`}
+            aria-label={micMuted ? "Unmute" : "Mute"}
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              {micMuted ? (
+                <>
+                  <line x1="1" y1="1" x2="23" y2="23" />
+                  <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
+                  <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.48-.35 2.15" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </>
+              ) : (
+                <>
+                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+                  <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                  <line x1="12" y1="19" x2="12" y2="23" />
+                  <line x1="8" y1="23" x2="16" y2="23" />
+                </>
+              )}
+            </svg>
+          </button>
 
-        {/* Text field */}
-        <input
-          type="text"
-          value={inputValue}
-          onChange={(e) => {
-            setInputValue(e.target.value);
-          }}
-          onKeyDown={handleKeyDown}
-          placeholder={status === "connected" ? "Type a message..." : "Connect first..."}
-          disabled={status !== "connected"}
-          className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-[13px] text-white/90 placeholder-white/15 outline-none focus:border-white/15 focus:bg-white/[0.05] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
-        />
+          {/* Text field */}
+          <input
+            type="text"
+            value={inputValue}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+            }}
+            onKeyDown={handleKeyDown}
+            placeholder="Type a message..."
+            disabled={status !== "connected"}
+            className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-[13px] text-white/90 placeholder-white/15 outline-none focus:border-white/15 focus:bg-white/[0.05] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+          />
 
-        {/* Send */}
-        <button
-          onClick={handleSend}
-          disabled={status !== "connected" || !inputValue.trim()}
-          className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
-          aria-label="Send"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M22 2L11 13" />
-            <path d="M22 2L15 22L11 13L2 9L22 2Z" />
-          </svg>
-        </button>
+          {/* Send */}
+          <button
+            onClick={handleSend}
+            disabled={status !== "connected" || !inputValue.trim()}
+            className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+            aria-label="Send"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M22 2L11 13" />
+              <path d="M22 2L15 22L11 13L2 9L22 2Z" />
+            </svg>
+          </button>
 
-        {/* Clear */}
-        <button
-          onClick={onClearMessages}
-          disabled={messages.length === 0}
-          className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
-          aria-label="Clear messages"
-          title="Clear chat display (memory preserved)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18" />
-            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
-            <line x1="10" y1="11" x2="10" y2="17" />
-            <line x1="14" y1="11" x2="14" y2="17" />
-          </svg>
-        </button>
+          {/* Clear */}
+          <button
+            onClick={onClearMessages}
+            disabled={messages.length === 0}
+            className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+            aria-label="Clear messages"
+            title="Clear chat display (memory preserved)"
+          >
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M3 6h18" />
+              <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
+              <line x1="10" y1="11" x2="10" y2="17" />
+              <line x1="14" y1="11" x2="14" y2="17" />
+            </svg>
+          </button>
+        </div>
+      )}
 
-        {/* Connect / End */}
+      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+
+      {/* ── Bottom action button ── */}
+      <div className="px-4 py-4 flex justify-center">
         <button
           onClick={status === "connected" ? onDisconnect : onConnect}
           disabled={status === "connecting"}
-          className={`relative px-6 py-3 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
+          className={`relative px-8 py-3.5 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
             status === "connected"
               ? "bg-white/[0.04] text-white/30 hover:bg-red-500/15 hover:text-red-300"
               : "bg-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white/90"
