@@ -42,18 +42,20 @@ export default function HackerLog() {
 
   return (
     <>
-      {/* Toggle button */}
-      <button
-        onClick={() => setIsVisible(!isVisible)}
-        className="absolute bottom-5 left-5 w-10 h-10 rounded bg-green-500/10 border border-green-500/40 hover:border-green-500/80 hover:bg-green-500/20 transition-all flex items-center justify-center text-green-400 hover:text-green-300 z-40 cursor-pointer"
-        aria-label="Toggle debug logs"
-        title="Toggle debug logs"
-      >
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
-          <line x1="2" y1="20" x2="22" y2="20" />
-        </svg>
-      </button>
+      {/* Toggle button - hidden when logs are visible */}
+      {!isVisible && (
+        <button
+          onClick={() => setIsVisible(true)}
+          className="absolute bottom-5 left-5 w-10 h-10 rounded bg-green-500/10 border border-green-500/40 hover:border-green-500/80 hover:bg-green-500/20 transition-all flex items-center justify-center text-green-400 hover:text-green-300 z-40 cursor-pointer"
+          aria-label="Show debug logs"
+          title="Show debug logs"
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+            <line x1="2" y1="20" x2="22" y2="20" />
+          </svg>
+        </button>
+      )}
 
       {/* Log panel */}
       {isVisible && (
@@ -63,7 +65,19 @@ export default function HackerLog() {
           {/* Header */}
           <div className="px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between">
             <span className="text-green-400 font-bold">HACKER_LOG.SYS</span>
-            <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
+            <div className="flex items-center gap-2">
+              <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
+              <button
+                onClick={() => setIsVisible(false)}
+                className="text-green-400/40 hover:text-green-400 transition-colors p-1"
+                aria-label="Minimize logs"
+                title="Minimize logs"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <line x1="5" y1="12" x2="19" y2="12" />
+                </svg>
+              </button>
+            </div>
           </div>
 
           {/* Logs */}
