@@ -1,7 +1,16 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
-import MessageBubble, { ChatMessage } from "./MessageBubble";
+import { useState } from "react";
+import { ChatMessage } from "./MessageBubble";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ui/conversation";
+import { Message, MessageContent } from "@/components/ui/message";
+import { Response } from "@/components/ui/response";
+import { ShimmeringText } from "@/components/ui/shimmering-text";
 
 interface GlassChatProps {
   messages: ChatMessage[];
@@ -27,14 +36,6 @@ export default function GlassChat({
   onToggleMic,
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  // Auto-scroll to bottom on new messages
-  useEffect(() => {
-    if (scrollRef.current) {
-      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-    }
-  }, [messages]);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -52,61 +53,132 @@ export default function GlassChat({
 
   const statusColor =
     status === "connected"
-      ? "bg-green-400"
+      ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]"
       : status === "connecting"
-      ? "bg-yellow-400"
-      : "bg-red-400";
+      ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.6)] animate-pulse"
+      : "bg-white/20";
 
   const statusText =
     status === "connected"
       ? isSpeaking
-        ? "Agent speaking..."
+        ? "Speaking"
         : "Listening"
       : status === "connecting"
-      ? "Connecting..."
-      : "Disconnected";
+      ? "Connecting"
+      : "Offline";
 
   return (
-    <div className="absolute right-6 top-6 bottom-6 w-[380px] max-w-[calc(100vw-5rem)] z-20 flex flex-col rounded-2xl overflow-hidden glass-panel">
-      {/* Status bar */}
-      <div className="flex items-center gap-3 px-5 py-3 border-b border-white/10">
-        <div className={`w-2.5 h-2.5 rounded-full ${statusColor} shrink-0`} />
-        <span className="text-white/80 text-sm font-medium">{statusText}</span>
+    <div className="absolute right-6 top-6 bottom-6 w-[400px] max-w-[calc(100vw-5rem)] z-20 flex flex-col rounded-2xl overflow-hidden glass-panel">
+      {/* Header */}
+      <div className="flex items-center justify-between px-5 py-4 border-b border-white/[0.06]">
+        <div className="flex items-center gap-3">
+          <div className={`w-2 h-2 rounded-full ${statusColor} shrink-0`} />
+          <span className="text-white/70 text-xs font-medium tracking-wider uppercase">
+            {statusText}
+          </span>
+        </div>
+        {status === "connected" && isSpeaking && (
+          <div className="flex gap-[3px] items-end h-3">
+            {[1, 2, 3, 4].map((i) => (
+              <div
+                key={i}
+                className="w-[2px] bg-white/40 rounded-full animate-pulse"
+                style={{
+                  height: `${6 + Math.random() * 6}px`,
+                  animationDelay: `${i * 0.15}s`,
+                  animationDuration: "0.6s",
+                }}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Messages */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto px-4 py-4 space-y-1 scrollbar-thin"
-      >
-        {messages.length === 0 && (
-          <p className="text-white/30 text-sm text-center mt-8">
-            {status === "connected"
-              ? "Waiting for conversation..."
-              : "Click Connect to start"}
-          </p>
-        )}
-        {messages.map((msg) => (
-          <MessageBubble key={msg.id} message={msg} />
-        ))}
-      </div>
+      {/* Messages area using ElevenLabs Conversation component */}
+      <Conversation className="flex-1 scrollbar-thin">
+        <ConversationContent className="space-y-1 px-3 py-4">
+          {messages.length === 0 ? (
+            <ConversationEmptyState
+              className="text-white/30"
+              title={
+                status === "connected" ? (
+                  <ShimmeringText
+                    text="Waiting for conversation..."
+                    className="text-sm"
+                    color="rgba(255,255,255,0.25)"
+                    shimmerColor="rgba(255,255,255,0.5)"
+                    duration={3}
+                    spread={1}
+                  />
+                ) : (
+                  <span className="text-sm text-white/25">
+                    Click Connect to start
+                  </span>
+                )
+              }
+              description=""
+            />
+          ) : (
+            messages.map((msg, index) => {
+              const isUser = msg.role === "user";
+              const isLatestAgent =
+                !isUser &&
+                msg.isFinal &&
+                index ===
+                  messages.findLastIndex((m) => m.role === "agent");
+
+              return (
+                <Message
+                  key={msg.id}
+                  from={isUser ? "user" : "assistant"}
+                  className="py-2"
+                >
+                  <MessageContent
+                    variant={isUser ? "contained" : "flat"}
+                    className={
+                      isUser
+                        ? "bg-white/[0.12] text-white rounded-2xl rounded-br-md"
+                        : "text-white/90"
+                    }
+                  >
+                    {isUser ? (
+                      <span className="text-[13px] leading-relaxed">
+                        {msg.text}
+                      </span>
+                    ) : isLatestAgent ? (
+                      <Response className="text-[13px] leading-relaxed streamdown">
+                        {msg.text}
+                      </Response>
+                    ) : (
+                      <span className="text-[13px] leading-relaxed">
+                        {msg.text}
+                      </span>
+                    )}
+                  </MessageContent>
+                </Message>
+              );
+            })
+          )}
+        </ConversationContent>
+        <ConversationScrollButton className="bg-white/10 border-white/10 text-white hover:bg-white/20 backdrop-blur-sm" />
+      </Conversation>
 
       {/* Input area */}
-      <div className="border-t border-white/10 px-4 py-3 flex items-center gap-2">
+      <div className="border-t border-white/[0.06] px-4 py-3 flex items-center gap-2">
         {/* Mic toggle */}
         <button
           onClick={onToggleMic}
           disabled={status !== "connected"}
-          className={`p-2 rounded-lg transition-colors ${
+          className={`p-2.5 rounded-xl transition-all duration-200 ${
             micMuted
-              ? "bg-red-500/30 text-red-300"
-              : "bg-white/10 text-white/70 hover:text-white"
-          } disabled:opacity-30 disabled:cursor-not-allowed`}
+              ? "bg-red-500/20 text-red-300 ring-1 ring-red-500/30"
+              : "bg-white/[0.06] text-white/50 hover:text-white/80 hover:bg-white/[0.1]"
+          } disabled:opacity-20 disabled:cursor-not-allowed`}
           aria-label={micMuted ? "Unmute microphone" : "Mute microphone"}
         >
           <svg
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -146,19 +218,19 @@ export default function GlassChat({
             status === "connected" ? "Type a message..." : "Connect first..."
           }
           disabled={status !== "connected"}
-          className="flex-1 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-white/30 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex-1 bg-white/[0.04] border border-white/[0.08] rounded-xl px-3.5 py-2.5 text-[13px] text-white placeholder-white/20 outline-none focus:border-white/20 focus:bg-white/[0.06] transition-all disabled:opacity-20 disabled:cursor-not-allowed"
         />
 
         {/* Send button */}
         <button
           onClick={handleSend}
           disabled={status !== "connected" || !inputValue.trim()}
-          className="p-2 rounded-lg bg-white/10 text-white/70 hover:text-white transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-2.5 rounded-xl bg-white/[0.06] text-white/50 hover:text-white/80 hover:bg-white/[0.1] transition-all disabled:opacity-20 disabled:cursor-not-allowed"
           aria-label="Send message"
         >
           <svg
-            width="18"
-            height="18"
+            width="16"
+            height="16"
             viewBox="0 0 24 24"
             fill="none"
             stroke="currentColor"
@@ -175,11 +247,11 @@ export default function GlassChat({
         <button
           onClick={status === "connected" ? onDisconnect : onConnect}
           disabled={status === "connecting"}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+          className={`px-5 py-2.5 rounded-xl text-xs font-semibold tracking-wide uppercase transition-all duration-300 ${
             status === "connected"
-              ? "bg-red-500/30 text-red-300 hover:bg-red-500/50"
-              : "bg-green-500/30 text-green-300 hover:bg-green-500/50"
-          } disabled:opacity-50 disabled:cursor-not-allowed`}
+              ? "bg-white/[0.06] text-white/40 hover:bg-red-500/20 hover:text-red-300 hover:ring-1 hover:ring-red-500/20"
+              : "bg-white/[0.1] text-white/70 hover:bg-white/[0.15] hover:text-white"
+          } disabled:opacity-40 disabled:cursor-not-allowed`}
         >
           {status === "connected"
             ? "End"
