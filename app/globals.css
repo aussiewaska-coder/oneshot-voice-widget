@@ -51,56 +51,98 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
-/* Glassmorphism panel */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(2rem);
-  -webkit-backdrop-filter: blur(2rem);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+/* ─── Chat glass panel ─── */
+.chat-glass {
+  background: rgba(10, 10, 30, 0.55);
+  backdrop-filter: blur(40px) saturate(1.4);
+  -webkit-backdrop-filter: blur(40px) saturate(1.4);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+    0 0 0 1px rgba(255, 255, 255, 0.03) inset,
+    0 25px 50px -12px rgba(0, 0, 0, 0.6),
+    0 0 80px -20px rgba(100, 100, 255, 0.08);
 }
 
-/* Scrollbar styling */
+/* ─── Scrollbar ─── */
 .scrollbar-thin::-webkit-scrollbar {
-  width: 4px;
+  width: 3px;
 }
-
 .scrollbar-thin::-webkit-scrollbar-track {
   background: transparent;
 }
-
 .scrollbar-thin::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.1);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 3px;
 }
-
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.18);
 }
 
-/* Streamdown / Response styling for dark theme */
+/* ─── Streamdown (Response component) ─── */
 .streamdown {
-  color: rgba(255, 255, 255, 0.88);
+  color: rgba(255, 255, 255, 0.82);
+  font-weight: 300;
+  line-height: 1.7;
+}
+
+.streamdown p {
+  margin: 0;
+}
+
+.streamdown p + p {
+  margin-top: 0.75em;
+}
+
+.streamdown strong {
+  color: rgba(255, 255, 255, 0.95);
+  font-weight: 500;
+}
+
+.streamdown em {
+  color: rgba(255, 255, 255, 0.7);
 }
 
 .streamdown code {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 0.25rem;
-  padding: 0.15em 0.35em;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.3rem;
+  padding: 0.12em 0.4em;
   font-size: 0.85em;
+  color: rgba(255, 255, 255, 0.9);
 }
 
 .streamdown pre {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 0.5rem;
-  padding: 1rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 0.6rem;
+  padding: 0.9rem 1rem;
   overflow-x: auto;
+  margin: 0.5em 0;
 }
 
 .streamdown pre code {
   background: none;
+  border: none;
   padding: 0;
+}
+
+/* ─── Animations ─── */
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes speakBar {
+  from {
+    height: 4px;
+  }
+  to {
+    height: 14px;
+  }
 }
