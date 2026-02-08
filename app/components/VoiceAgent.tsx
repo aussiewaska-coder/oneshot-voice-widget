@@ -200,15 +200,26 @@ export default function VoiceAgent() {
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
 
           // Build a custom first message that acknowledges the conversation history
+          // Use agent's last response as context (more meaningful than user's last message)
+          const lastAgentMsg = memData.turns.filter((t: any) => t.role === "agent").pop();
           const lastUserMsg = memData.turns.filter((t: any) => t.role === "user").pop();
 
-          if (lastUserMsg) {
+          if (lastAgentMsg) {
+            // Extract first meaningful phrase from agent's last response (first sentence or ~60 chars)
+            const agentText = lastAgentMsg.text;
+            const firstSentence = agentText.split(/[.!?]+/)[0] || agentText.substring(0, 60);
+            const snippet = firstSentence.substring(0, 60);
+            customFirstMessage = `Alright mate, we were just talking about ${snippet.toLowerCase()}${snippet.length === 60 ? "..." : ""} Where were we?`;
+            log?.(`[OVERRIDE] Custom first message generated from agent context`, "success");
+            log?.(`  "${customFirstMessage}"`, "info");
+          } else if (lastUserMsg) {
+            // Fallback to user message if no agent message
             const snippet = lastUserMsg.text.substring(0, 50);
-            customFirstMessage = `Gday, back for more? Last time you asked about: "${snippet}${lastUserMsg.text.length > 50 ? "..." : ""}" — let's pick it up from there.`;
-            log?.(`[OVERRIDE] Custom first message generated`, "success");
+            customFirstMessage = `Gday, back for more? We were discussing "${snippet}${lastUserMsg.text.length > 50 ? "..." : ""}"`;
+            log?.(`[OVERRIDE] Custom first message generated from user context`, "success");
             log?.(`  "${customFirstMessage}"`, "info");
           } else {
-            log?.(`[REDIS] → no user messages in history, using default first message`, "debug");
+            log?.(`[REDIS] → no messages in history, using default first message`, "debug");
           }
 
           // Build enhanced system prompt with conversation history
