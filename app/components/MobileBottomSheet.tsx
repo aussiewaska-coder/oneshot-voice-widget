@@ -161,9 +161,9 @@ export function MobileBottomSheet({
 
         {/* Status Bar (only shown when collapsed or partial) */}
         {sheetState !== "full" && (
-          <div className="w-full flex items-center justify-between text-xs">
-            <div className="flex items-center gap-2">
-              <div className="relative flex h-2 w-2">
+          <div className="w-full flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 min-w-0 flex-shrink">
+              <div className="relative flex h-2 w-2 flex-shrink-0">
                 {status === "connected" && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                 )}
@@ -180,7 +180,7 @@ export function MobileBottomSheet({
                   }`}
                 />
               </div>
-              <span className="text-white/60">
+              <span className="text-white/60 truncate">
                 {status === "connected" ? "Connected" : status === "connecting" ? "Connecting..." : "Offline"}
               </span>
             </div>
@@ -189,7 +189,7 @@ export function MobileBottomSheet({
             <button
               onClick={status === "connected" ? onDisconnect : onConnect}
               disabled={status === "connecting"}
-              className={`text-xs font-bold px-3 py-1 rounded transition-all min-w-16 ${
+              className={`text-xs font-bold px-4 py-1.5 rounded transition-all min-w-14 flex-shrink-0 ${
                 status === "connected"
                   ? "bg-red-500/30 text-red-200 hover:bg-red-500/40"
                   : "bg-white/15 text-white/90 hover:bg-white/25"
