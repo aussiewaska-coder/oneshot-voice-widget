@@ -16,6 +16,7 @@ export function usePerformanceMode() {
   const [isLowPerformance, setIsLowPerformance] = useState(false);
   const frameCountRef = useRef(0);
   const lastTimeRef = useRef(performance.now());
+  const isLowPerformanceRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") {
@@ -34,15 +35,17 @@ export function usePerformanceMode() {
         const fps = (frameCountRef.current * 1000) / elapsed;
 
         // If FPS drops below 45, enable low performance mode
-        if (fps < 45 && !isLowPerformance) {
+        if (fps < 45 && !isLowPerformanceRef.current) {
+          isLowPerformanceRef.current = true;
           setIsLowPerformance(true);
           const log = (window as any).hackerLog;
           log?.(
             `[PERFORMANCE] Low FPS detected (${fps.toFixed(1)}), enabling optimizations`,
             "warning"
           );
-        } else if (fps >= 50 && isLowPerformance) {
+        } else if (fps >= 50 && isLowPerformanceRef.current) {
           // Recover if FPS improves
+          isLowPerformanceRef.current = false;
           setIsLowPerformance(false);
           const log = (window as any).hackerLog;
           log?.(`[PERFORMANCE] FPS recovered (${fps.toFixed(1)}), disabling optimizations`, "success");
@@ -62,7 +65,7 @@ export function usePerformanceMode() {
         cancelAnimationFrame(animationFrameId);
       }
     };
-  }, [isLowPerformance]);
+  }, []);
 
   return { isLowPerformance };
 }
