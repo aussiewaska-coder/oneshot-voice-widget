@@ -15,14 +15,12 @@ interface MobileBottomSheetProps {
   messages: ChatMessage[];
   status: "connected" | "disconnected" | "connecting";
   isSpeaking: boolean;
-  micMuted: boolean;
   logs: LogEntry[];
   health: SystemHealth;
   fontSizeMultiplier: number;
   onConnect: () => void;
   onDisconnect: () => void;
   onSendMessage: (text: string) => void;
-  onToggleMic: () => void;
   onClearMessages: () => void;
   onFontSizeChange: (multiplier: number) => void;
   lowPerformance?: boolean;
@@ -42,14 +40,12 @@ export function MobileBottomSheet({
   messages,
   status,
   isSpeaking,
-  micMuted,
   logs,
   health,
   fontSizeMultiplier,
   onConnect,
   onDisconnect,
   onSendMessage,
-  onToggleMic,
   onClearMessages,
   onFontSizeChange,
   lowPerformance = false,
@@ -249,11 +245,9 @@ export function MobileBottomSheet({
               messages={messages}
               status={status}
               isSpeaking={isSpeaking}
-              micMuted={micMuted}
               onConnect={onConnect}
               onDisconnect={onDisconnect}
               onSendMessage={onSendMessage}
-              onToggleMic={onToggleMic}
               onClearMessages={onClearMessages}
               compact={true}
             />

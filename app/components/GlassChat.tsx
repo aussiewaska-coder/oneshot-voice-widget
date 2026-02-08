@@ -9,11 +9,9 @@ interface GlassChatProps {
   messages: ChatMessage[];
   status: "connected" | "disconnected" | "connecting";
   isSpeaking: boolean;
-  micMuted: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
   onSendMessage: (text: string) => void;
-  onToggleMic: () => void;
   onClearMessages: () => void;
   onChatOpenChange?: (isOpen: boolean) => void;
 }
@@ -35,11 +33,9 @@ export default function GlassChat({
   messages,
   status,
   isSpeaking,
-  micMuted,
   onConnect,
   onDisconnect,
   onSendMessage,
-  onToggleMic,
   onClearMessages,
   onChatOpenChange,
 }: GlassChatProps) {
@@ -343,37 +339,19 @@ export default function GlassChat({
 
       {/* ── Input bar (always visible) ── */}
       <div className="px-4 py-4 flex items-center gap-2.5">
-        {/* Mic - prominent */}
-        <button
-          onClick={onToggleMic}
-          disabled={status !== "connected"}
-          className={`p-3 rounded-xl transition-all duration-200 ${
-            micMuted
-              ? "bg-red-500/25 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.25)] ring-1.5 ring-red-500/30"
-              : "bg-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.12] shadow-[0_0_10px_rgba(255,255,255,0.05)]"
-          } disabled:opacity-15 disabled:cursor-not-allowed`}
-          aria-label={micMuted ? "Unmute" : "Mute"}
-          title={micMuted ? "Unmute microphone" : "Mute microphone"}
-        >
+        {/* Mic indicator */}
+        <div className={`p-3 rounded-xl ${
+          status === "connected"
+            ? "bg-white/[0.08] text-white/60"
+            : "opacity-15"
+        }`}>
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            {micMuted ? (
-              <>
-                <line x1="1" y1="1" x2="23" y2="23" />
-                <path d="M9 9v3a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6" />
-                <path d="M17 16.95A7 7 0 0 1 5 12v-2m14 0v2c0 .76-.13 1.48-.35 2.15" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </>
-            ) : (
-              <>
-                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
-                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
-                <line x1="12" y1="19" x2="12" y2="23" />
-                <line x1="8" y1="23" x2="16" y2="23" />
-              </>
-            )}
+            <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z" />
+            <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+            <line x1="12" y1="19" x2="12" y2="23" />
+            <line x1="8" y1="23" x2="16" y2="23" />
           </svg>
-        </button>
+        </div>
 
         {/* Text field - more prominent */}
         <input

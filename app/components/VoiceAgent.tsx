@@ -41,7 +41,6 @@ export default function VoiceAgent() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputVolume, setInputVolume] = useState(0);
   const [outputVolume, setOutputVolume] = useState(0);
-  const [micMuted, setMicMuted] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [docModalOpen, setDocModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
@@ -63,10 +62,6 @@ export default function VoiceAgent() {
   const intentionalDisconnectRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const connectionStartTimeRef = useRef<number | null>(null);
-  const commandPressedRef = useRef(false);
-  const commandMutedRef = useRef(false);
-  const lastCommandPressRef = useRef(0);
-  const micMutedRef = useRef(false);
 
   // Responsive hooks
   const { isMobile } = useViewport();
@@ -102,7 +97,6 @@ export default function VoiceAgent() {
   }, []);
 
   const conversation = useConversation({
-    micMuted,
     onConnect: () => {
       const log = (window as any).hackerLog;
       log?.(`[WEBSOCKET] connected to agent`, "success");
@@ -357,13 +351,6 @@ This is context from our previous conversation. Remember these details when resp
     [conversation]
   );
 
-  const handleToggleMic = useCallback(() => {
-    setMicMuted((prev) => {
-      micMutedRef.current = !prev;
-      return !prev;
-    });
-  }, []);
-
   const handleClearMessages = useCallback(() => {
     const log = (window as any).hackerLog;
     log?.(`[CLEAR] clearing chat display (memory preserved)`, "debug");
@@ -416,11 +403,9 @@ This is context from our previous conversation. Remember these details when resp
         status:
           micPermission === "denied"
             ? "offline"
-            : micMuted || (!inputVolume && !outputVolume)
-              ? "degraded"
-              : "healthy",
+            : "healthy",
         micPermission,
-        micMuted,
+        micMuted: false,
         inputActive: false,
         outputActive: false,
       },
@@ -451,7 +436,6 @@ This is context from our previous conversation. Remember these details when resp
   }, [
     connectionStatus,
     connectionStartTimeRef,
-    micMuted,
     micPermission,
     memoryLayer,
     memoryTurns,
@@ -468,38 +452,9 @@ This is context from our previous conversation. Remember these details when resp
     };
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal), Command (hold to mute, double-tap to toggle)
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Command key (Meta) - hold to mute, double-tap to toggle
-      if (e.code === "MetaLeft" || e.code === "MetaRight") {
-        const now = Date.now();
-        const timeSinceLastPress = now - lastCommandPressRef.current;
-
-        // Double-tap detection (within 300ms)
-        if (timeSinceLastPress < 300 && timeSinceLastPress > 0) {
-          e.preventDefault();
-          // Toggle mute
-          const newMuted = !micMutedRef.current;
-          micMutedRef.current = newMuted;
-          setMicMuted(newMuted);
-          commandMutedRef.current = false;
-          (window as any).hackerLog?.(`[MIC] toggled mute to ${newMuted}`, "info");
-        } else {
-          // Single press - mute while held
-          commandPressedRef.current = true;
-          if (!commandMutedRef.current) {
-            commandMutedRef.current = true;
-            micMutedRef.current = true;
-            setMicMuted(true);
-            (window as any).hackerLog?.(`[MIC] muted (hold Command)`, "debug");
-          }
-        }
-
-        lastCommandPressRef.current = now;
-        return;
-      }
-
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
         e.preventDefault();
         if (connectionStatus === "connected") {
@@ -521,7 +476,6 @@ This is context from our previous conversation. Remember these details when resp
         (window as any).scrollChatDown?.();
       } else if (e.code === "Tab") {
         e.preventDefault();
-        // Close doc modal first, then toggle logs
         if (docModalOpen) {
           setDocModalOpen(false);
         } else {
@@ -533,41 +487,9 @@ This is context from our previous conversation. Remember these details when resp
       }
     };
 
-    const handleKeyUp = (e: KeyboardEvent) => {
-      // Release mute when Command is released
-      if (e.code === "MetaLeft" || e.code === "MetaRight") {
-        commandPressedRef.current = false;
-        if (commandMutedRef.current) {
-          // Only unmute if it was muted by holding Command (not by toggle)
-          const timeSincePress = Date.now() - lastCommandPressRef.current;
-          if (timeSincePress > 50) {
-            micMutedRef.current = false;
-            setMicMuted(false);
-            commandMutedRef.current = false;
-            (window as any).hackerLog?.(`[MIC] unmuted (released Command)`, "debug");
-          }
-        }
-      }
-    };
-
-    // Recover from lost keyup events (e.g., Cmd+Tab switches apps)
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible" && commandMutedRef.current) {
-        commandPressedRef.current = false;
-        commandMutedRef.current = false;
-        micMutedRef.current = false;
-        setMicMuted(false);
-        (window as any).hackerLog?.(`[MIC] unmuted (page refocused)`, "debug");
-      }
-    };
-
     window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen]);
 
@@ -598,11 +520,9 @@ This is context from our previous conversation. Remember these details when resp
             messages={messages}
             status={connectionStatus}
             isSpeaking={conversation.isSpeaking}
-            micMuted={micMuted}
             onConnect={handleConnect}
             onDisconnect={handleDisconnect}
             onSendMessage={handleSendMessage}
-            onToggleMic={handleToggleMic}
             onClearMessages={handleClearMessages}
             onChatOpenChange={setIsChatOpen}
           />
@@ -620,14 +540,12 @@ This is context from our previous conversation. Remember these details when resp
           messages={messages}
           status={connectionStatus}
           isSpeaking={conversation.isSpeaking}
-          micMuted={micMuted}
           logs={logs}
           health={health}
           fontSizeMultiplier={fontSizeMultiplier}
           onConnect={handleConnect}
           onDisconnect={handleDisconnect}
           onSendMessage={handleSendMessage}
-          onToggleMic={handleToggleMic}
           onClearMessages={handleClearMessages}
           onFontSizeChange={setFontSizeMultiplier}
           lowPerformance={isLowPerformance}

@@ -22,11 +22,9 @@ interface ChatContentProps {
   messages: ChatMessage[];
   status: "connected" | "disconnected" | "connecting";
   isSpeaking: boolean;
-  micMuted: boolean;
   onConnect: () => void;
   onDisconnect: () => void;
   onSendMessage: (text: string) => void;
-  onToggleMic: () => void;
   onClearMessages: () => void;
   compact?: boolean; // true for mobile, false for desktop
 }
@@ -41,11 +39,9 @@ export function ChatContent({
   messages,
   status,
   isSpeaking,
-  micMuted,
   onConnect,
   onDisconnect,
   onSendMessage,
-  onToggleMic,
   onClearMessages,
   compact = false,
 }: ChatContentProps) {
@@ -174,34 +170,15 @@ export function ChatContent({
             </svg>
           </button>
 
-          {/* Mic Toggle */}
-          <button
-            onClick={onToggleMic}
-            className={`p-2 rounded-lg transition-all min-w-12 min-h-12 flex items-center justify-center ${
-              micMuted
-                ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                : "bg-white/10 text-white/60 hover:bg-white/20"
-            }`}
-            aria-label={micMuted ? "Unmute microphone" : "Mute microphone"}
-            title={micMuted ? "Unmute (Command key)" : "Mute (Command key)"}
-          >
+          {/* Mic indicator */}
+          <div className="p-2 rounded-lg bg-white/10 text-white/60 min-w-12 min-h-12 flex items-center justify-center">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              {micMuted ? (
-                <>
-                  <line x1="1" y1="1" x2="23" y2="23"></line>
-                  <path d="M9 9v6a3 3 0 0 0 5.12 2.12M15 9.34V4a3 3 0 0 0-5.94-.6"></path>
-                  <path d="M17 16.95A7 7 0 0 1 5 12m14 0a7 7 0 0 1-13.8 1"></path>
-                </>
-              ) : (
-                <>
-                  <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                  <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                  <line x1="12" y1="19" x2="12" y2="23"></line>
-                  <line x1="8" y1="23" x2="16" y2="23"></line>
-                </>
-              )}
+              <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+              <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+              <line x1="12" y1="19" x2="12" y2="23"></line>
+              <line x1="8" y1="23" x2="16" y2="23"></line>
             </svg>
-          </button>
+          </div>
         </div>
       </div>
     </div>
