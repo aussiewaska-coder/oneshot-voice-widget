@@ -361,22 +361,25 @@ export default function GlassChat({
             </svg>
           </button>
 
-          {/* Clear */}
-          <button
-            onClick={onClearMessages}
-            disabled={messages.length === 0}
-            className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
-            aria-label="Clear messages"
-            title="Clear chat display (memory preserved)"
-          >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 6h18" />
-              <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
-          </button>
         </div>
+      )}
+
+      {/* Clear button - always visible when connected */}
+      {status === "connected" && (
+        <button
+          onClick={onClearMessages}
+          disabled={messages.length === 0}
+          className="absolute right-3 top-3 p-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+          aria-label="Clear messages"
+          title="Clear chat display (memory preserved)"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 6h18" />
+            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
+            <line x1="10" y1="11" x2="10" y2="17" />
+            <line x1="14" y1="11" x2="14" y2="17" />
+          </svg>
+        </button>
       )}
 
           <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
