@@ -5,17 +5,20 @@ import { useState, useCallback, useRef, useEffect } from "react";
 import OrbBackground from "./OrbBackground";
 import GlassChat from "./GlassChat";
 import PaletteSwitcher from "./PaletteSwitcher";
+import HackerLog from "./HackerLog";
 import { ChatMessage } from "./MessageBubble";
 
 // Fire-and-forget save — never blocks the conversation
 function persistTurn(role: "user" | "agent", text: string) {
+  const log = (window as any).hackerLog;
+  log?.(`[MEMORY] saving ${role} turn: "${text.substring(0, 40)}${text.length > 40 ? "..." : ""}"`, "debug");
   fetch("/api/memory", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ role, text }),
-  }).catch(() => {
-    // Memory loss is acceptable; blocking conversation is not
-  });
+  })
+    .then(() => log?.(`[MEMORY] turn saved ✓`, "success"))
+    .catch((err) => log?.(`[MEMORY] save failed: ${err.message}`, "error"));
 }
 
 export default function VoiceAgent() {
@@ -43,10 +46,13 @@ export default function VoiceAgent() {
 
   // Load previous conversation into the chat panel on mount
   useEffect(() => {
+    const log = (window as any).hackerLog;
+    log?.(`[INIT] loading conversation history...`, "info");
     fetch("/api/memory")
       .then((r) => r.json())
       .then((data) => {
         if (data.turns && data.turns.length > 0) {
+          log?.(`[INIT] loaded ${data.turns.length} turns from redis`, "success");
           const loaded: ChatMessage[] = data.turns.map(
             (t: { role: string; text: string }, i: number) => ({
               id: `history-${i}`,
@@ -57,25 +63,34 @@ export default function VoiceAgent() {
           );
           setMessages(loaded);
           messageIdCounter.current = loaded.length;
+        } else {
+          log?.(`[INIT] no history found`, "debug");
         }
       })
-      .catch(() => {});
+      .catch((err) => log?.(`[INIT] failed to load history: ${err.message}`, "error"));
   }, []);
 
   const conversation = useConversation({
     micMuted,
     onConnect: () => {
+      const log = (window as any).hackerLog;
+      log?.(`[WEBSOCKET] connected to agent`, "success");
       isConnectedRef.current = true;
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
+      const log = (window as any).hackerLog;
+      log?.(`[WEBSOCKET] disconnected`, "debug");
       isConnectedRef.current = false;
       stopPolling();
       setConnectionStatus("disconnected");
     },
     onMessage: (message) => {
+      const log = (window as any).hackerLog;
       const id = `msg-${messageIdCounter.current++}`;
       const role = message.source === "user" ? "user" : "agent";
+
+      log?.(`[MESSAGE] ${role}: "${message.message.substring(0, 50)}${message.message.length > 50 ? "..." : ""}"`, "info");
 
       setMessages((prev) => [
         ...prev,
@@ -86,6 +101,8 @@ export default function VoiceAgent() {
       persistTurn(role, message.message);
     },
     onError: (error) => {
+      const log = (window as any).hackerLog;
+      log?.(`[ERROR] ${error}`, "error");
       console.error("Conversation error:", error);
       isConnectedRef.current = false;
       stopPolling();
@@ -121,24 +138,40 @@ export default function VoiceAgent() {
   }, [connectionStatus, pollVolume]);
 
   const handleConnect = useCallback(async () => {
+    const log = (window as any).hackerLog;
     try {
+      log?.(`[CONNECT] requesting mic permission...`, "debug");
       setConnectionStatus("connecting");
 
       // Fetch signed URL, mic permission, and memory in parallel
       const [urlRes, memRes] = await Promise.all([
-        fetch("/api/get-signed-url"),
-        fetch("/api/memory").catch(() => null),
-        navigator.mediaDevices.getUserMedia({ audio: true }),
+        fetch("/api/get-signed-url").then((r) => {
+          log?.(`[API] GET /api/get-signed-url`, "debug");
+          return r;
+        }),
+        fetch("/api/memory")
+          .then((r) => {
+            log?.(`[API] GET /api/memory`, "debug");
+            return r;
+          })
+          .catch(() => null),
+        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
+          log?.(`[MIC] permission granted`, "success");
+          stream.getTracks().forEach((t) => t.stop()); // Stop preview tracks
+          return undefined;
+        }),
       ]);
 
       if (!urlRes.ok) throw new Error("Failed to get signed URL");
       const { signedUrl } = await urlRes.json();
+      log?.(`[SESSION] obtained signed url`, "success");
 
       // Build overrides if we have conversation history
       let overrides: Record<string, unknown> | undefined;
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
         if (memData.contextPrompt) {
+          log?.(`[OVERRIDE] injecting ${memData.turns?.length || 0} turns as context`, "success");
           overrides = {
             agent: {
               prompt: {
@@ -146,11 +179,16 @@ export default function VoiceAgent() {
               },
             },
           };
+        } else {
+          log?.(`[OVERRIDE] no context to inject (new conversation)`, "debug");
         }
       }
 
+      log?.(`[SESSION] starting websocket...`, "debug");
       await conversation.startSession({ signedUrl, overrides });
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      log?.(`[CONNECT] failed: ${msg}`, "error");
       console.error("Failed to connect:", error);
       setConnectionStatus("disconnected");
     }
@@ -201,6 +239,7 @@ export default function VoiceAgent() {
         onSendMessage={handleSendMessage}
         onToggleMic={handleToggleMic}
       />
+      <HackerLog />
     </div>
   );
 }
