@@ -73,9 +73,60 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
 
       {/* Log panel */}
       {isVisible && (
-        <div className="absolute bottom-5 left-5 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
+        <div className="absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
           transformOrigin: "left center",
         }}>
+          {/* Top visualization section - Thinking animation */}
+          <style>{`
+            @keyframes thinkingRing {
+              0% {
+                transform: rotate(0deg) scale(1);
+                border-radius: 50%;
+              }
+              25% {
+                border-radius: 35%;
+              }
+              50% {
+                transform: rotate(180deg) scale(1.1);
+                border-radius: 20%;
+              }
+              75% {
+                border-radius: 35%;
+              }
+              100% {
+                transform: rotate(360deg) scale(1);
+                border-radius: 50%;
+              }
+            }
+          `}</style>
+          <div className="px-4 py-5 border-b border-green-500/20 bg-black/70 flex items-center justify-center">
+            <div className="relative w-12 h-12">
+              {/* Outer rotating ring */}
+              <div
+                className="absolute inset-0 border-2 border-transparent border-t-cyan-400 border-r-blue-400 rounded-full"
+                style={{
+                  animation: "spin 3s cubic-bezier(0.6, 0.2, 0.2, 0.6) infinite",
+                  boxShadow: "0 0 15px rgba(34, 211, 238, 0.6), inset 0 0 15px rgba(59, 130, 246, 0.2)",
+                }}
+              />
+              {/* Inner morphing shape */}
+              <div
+                className="absolute inset-2 border-2 border-green-400 bg-gradient-to-br from-green-500/10 to-cyan-500/5"
+                style={{
+                  animation: "thinkingRing 4s ease-in-out infinite",
+                  boxShadow: "0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(16, 185, 129, 0.2)",
+                }}
+              />
+              {/* Pulse center dot */}
+              <div className="absolute inset-4 bg-gradient-to-b from-cyan-400 to-green-400 rounded-full"
+                style={{
+                  animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                  boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)",
+                }}
+              />
+            </div>
+          </div>
+
           {/* Header */}
           <div className="px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between">
             <span className="text-green-400 font-bold text-[10px]">HACKER_LOG.SYS</span>
@@ -116,7 +167,7 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
           {/* Logs */}
           <div
             ref={containerRef}
-            className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-track-black/50 scrollbar-thumb-green-500/20"
+            className="flex-1 overflow-y-auto p-4 space-y-1.5 scrollbar-thin scrollbar-track-black/50 scrollbar-thumb-green-500/30 text-[10px]"
           >
             {logs.length === 0 ? (
               <div className="text-green-400/40">$ awaiting events...</div>
