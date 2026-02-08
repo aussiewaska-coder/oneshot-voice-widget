@@ -35,15 +35,16 @@ export default function VoiceAgent() {
     },
     onMessage: (message) => {
       console.log("[DEBUG] Message Received:", message);
-      // Ensure we catch whatever text property ElevenLabs sends
       const text = message.message || (message as any).text;
       if (!text) return;
 
       const id = `msg-${messageIdCounter.current++}`;
       const role = message.source === "user" ? "user" : "agent";
       
-      // Update UI
       setMessages((prev) => [...prev, { id, role, text, isFinal: true }]);
+    },
+    onStatusChange: (status) => {
+      console.log("[DEBUG] Status Change:", status);
     },
     onError: (error) => {
       console.error("[DEBUG] ElevenLabs Error:", error);
