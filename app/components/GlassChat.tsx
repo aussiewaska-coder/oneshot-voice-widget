@@ -310,17 +310,18 @@ export default function GlassChat({
 
       {/* ── Input bar (only when connected) ── */}
       {status === "connected" && (
-        <div className="px-4 py-3.5 flex items-center gap-2">
-          {/* Mic */}
+        <div className="px-4 py-4 flex items-center gap-2.5">
+          {/* Mic - prominent */}
           <button
             onClick={onToggleMic}
             disabled={status !== "connected"}
-            className={`p-2.5 rounded-xl transition-all duration-200 ${
+            className={`p-3 rounded-xl transition-all duration-200 ${
               micMuted
-                ? "bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.15)] ring-1 ring-red-500/20"
-                : "bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08]"
+                ? "bg-red-500/25 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.25)] ring-1.5 ring-red-500/30"
+                : "bg-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.12] shadow-[0_0_10px_rgba(255,255,255,0.05)]"
             } disabled:opacity-15 disabled:cursor-not-allowed`}
             aria-label={micMuted ? "Unmute" : "Mute"}
+            title={micMuted ? "Unmute microphone" : "Mute microphone"}
           >
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               {micMuted ? (
@@ -342,7 +343,7 @@ export default function GlassChat({
             </svg>
           </button>
 
-          {/* Text field */}
+          {/* Text field - more prominent */}
           <input
             type="text"
             value={inputValue}
@@ -352,17 +353,18 @@ export default function GlassChat({
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
             disabled={status !== "connected"}
-            className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-xl px-3.5 py-2.5 text-[13px] text-white/90 placeholder-white/15 outline-none focus:border-white/15 focus:bg-white/[0.05] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+            className="flex-1 bg-white/[0.06] border border-white/[0.1] rounded-xl px-4 py-3 text-[13px] text-white/95 placeholder-white/30 outline-none focus:border-white/25 focus:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed font-medium"
           />
 
-          {/* Send */}
+          {/* Send - more prominent */}
           <button
             onClick={handleSend}
             disabled={status !== "connected" || !inputValue.trim()}
-            className="p-2.5 rounded-xl bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+            className="p-3 rounded-xl bg-white/[0.08] text-white/70 hover:text-white/95 hover:bg-white/[0.12] transition-all disabled:opacity-15 disabled:cursor-not-allowed shadow-[0_0_10px_rgba(255,255,255,0.08)]"
             aria-label="Send"
+            title="Send message"
           >
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M22 2L11 13" />
               <path d="M22 2L15 22L11 13L2 9L22 2Z" />
             </svg>
@@ -371,20 +373,18 @@ export default function GlassChat({
         </div>
       )}
 
-      {/* Clear button - always visible when connected */}
+      {/* Clear button - always visible when connected, prominent */}
       {status === "connected" && (
         <button
           onClick={onClearMessages}
           disabled={messages.length === 0}
-          className="absolute right-3 top-3 p-2 rounded-lg bg-white/[0.04] text-white/40 hover:text-white/70 hover:bg-white/[0.08] transition-all disabled:opacity-15 disabled:cursor-not-allowed"
+          className="absolute right-2 top-2 p-2.5 rounded-lg bg-white/[0.08] text-white/60 hover:text-white/90 hover:bg-white/[0.12] transition-all disabled:opacity-20 disabled:cursor-not-allowed shadow-[0_0_8px_rgba(255,255,255,0.05)]"
           aria-label="Clear messages"
           title="Clear chat display (memory preserved)"
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M3 6h18" />
-            <path d="M8 6v12a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2V6" />
-            <line x1="10" y1="11" x2="10" y2="17" />
-            <line x1="14" y1="11" x2="14" y2="17" />
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 7v5M7 12h10" />
           </svg>
         </button>
       )}
