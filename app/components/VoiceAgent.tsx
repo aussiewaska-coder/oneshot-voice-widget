@@ -66,6 +66,7 @@ export default function VoiceAgent() {
   const commandPressedRef = useRef(false);
   const commandMutedRef = useRef(false);
   const lastCommandPressRef = useRef(0);
+  const micMutedRef = useRef(false);
 
   // Responsive hooks
   const { isMobile } = useViewport();
@@ -109,16 +110,18 @@ export default function VoiceAgent() {
       connectionStartTimeRef.current = Date.now();
       setConnectionStatus("connected");
 
-      // Inject pending context immediately after connect
+      // Inject pending context after audio pipeline has time to initialize
       if (pendingContextRef.current && !contextInjectedRef.current) {
         contextInjectedRef.current = true;
-        log?.(`[CONTEXT] injecting via sendContextualUpdate...`, "debug");
-        try {
-          conversation.sendContextualUpdate(pendingContextRef.current);
-          log?.(`[CONTEXT] ✓ sent`, "success");
-        } catch (err) {
-          log?.(`[CONTEXT] ✗ failed: ${err}`, "error");
-        }
+        setTimeout(() => {
+          log?.(`[CONTEXT] injecting via sendContextualUpdate...`, "debug");
+          try {
+            conversation.sendContextualUpdate(pendingContextRef.current!);
+            log?.(`[CONTEXT] ✓ sent`, "success");
+          } catch (err) {
+            log?.(`[CONTEXT] ✗ failed: ${err}`, "error");
+          }
+        }, 500);
       }
     },
     onDisconnect: () => {
@@ -202,7 +205,7 @@ export default function VoiceAgent() {
       log?.(`[CONNECT] requesting mic permission...`, "debug");
       setConnectionStatus("connecting");
 
-      // Fetch signed URL, mic permission, and memory in parallel
+      // Fetch signed URL and memory in parallel (SDK handles mic permission internally)
       const [urlRes, memRes] = await Promise.all([
         fetch("/api/get-signed-url").then((r) => {
           log?.(`[API] GET /api/get-signed-url`, "debug");
@@ -214,11 +217,6 @@ export default function VoiceAgent() {
             return r;
           })
           .catch(() => null),
-        navigator.mediaDevices.getUserMedia({ audio: true }).then((stream) => {
-          log?.(`[MIC] permission granted`, "success");
-          stream.getTracks().forEach((t) => t.stop()); // Stop preview tracks
-          return undefined;
-        }),
       ]);
 
       if (!urlRes.ok) throw new Error("Failed to get signed URL");
@@ -312,7 +310,12 @@ This is context from our previous conversation. Remember these details when resp
 
       log?.(`[SESSION] initiating websocket${overrides ? " with context" : ""}...`, "debug");
 
-      await conversation.startSession({ signedUrl, overrides });
+      // Only pass overrides when defined - undefined property can confuse SDK
+      const sessionConfig: any = { signedUrl };
+      if (overrides) {
+        sessionConfig.overrides = overrides;
+      }
+      await conversation.startSession(sessionConfig);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
@@ -355,7 +358,10 @@ This is context from our previous conversation. Remember these details when resp
   );
 
   const handleToggleMic = useCallback(() => {
-    setMicMuted((prev) => !prev);
+    setMicMuted((prev) => {
+      micMutedRef.current = !prev;
+      return !prev;
+    });
   }, []);
 
   const handleClearMessages = useCallback(() => {
@@ -415,8 +421,8 @@ This is context from our previous conversation. Remember these details when resp
               : "healthy",
         micPermission,
         micMuted,
-        inputActive: inputVolume > 0.05,
-        outputActive: outputVolume > 0.05,
+        inputActive: false,
+        outputActive: false,
       },
       logs: {
         status: errorCount > 5 ? "critical" : errorCount > 0 || warningCount > 3 ? "warning" : "healthy",
@@ -445,8 +451,6 @@ This is context from our previous conversation. Remember these details when resp
   }, [
     connectionStatus,
     connectionStartTimeRef,
-    inputVolume,
-    outputVolume,
     micMuted,
     micPermission,
     memoryLayer,
@@ -476,14 +480,17 @@ This is context from our previous conversation. Remember these details when resp
         if (timeSinceLastPress < 300 && timeSinceLastPress > 0) {
           e.preventDefault();
           // Toggle mute
-          setMicMuted((prev) => !prev);
+          const newMuted = !micMutedRef.current;
+          micMutedRef.current = newMuted;
+          setMicMuted(newMuted);
           commandMutedRef.current = false;
-          (window as any).hackerLog?.(`[MIC] toggled mute to ${!micMuted}`, "info");
+          (window as any).hackerLog?.(`[MIC] toggled mute to ${newMuted}`, "info");
         } else {
           // Single press - mute while held
           commandPressedRef.current = true;
           if (!commandMutedRef.current) {
             commandMutedRef.current = true;
+            micMutedRef.current = true;
             setMicMuted(true);
             (window as any).hackerLog?.(`[MIC] muted (hold Command)`, "debug");
           }
@@ -534,7 +541,7 @@ This is context from our previous conversation. Remember these details when resp
           // Only unmute if it was muted by holding Command (not by toggle)
           const timeSincePress = Date.now() - lastCommandPressRef.current;
           if (timeSincePress > 50) {
-            // Give some time buffer to detect double-tap
+            micMutedRef.current = false;
             setMicMuted(false);
             commandMutedRef.current = false;
             (window as any).hackerLog?.(`[MIC] unmuted (released Command)`, "debug");
@@ -543,13 +550,26 @@ This is context from our previous conversation. Remember these details when resp
       }
     };
 
+    // Recover from lost keyup events (e.g., Cmd+Tab switches apps)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible" && commandMutedRef.current) {
+        commandPressedRef.current = false;
+        commandMutedRef.current = false;
+        micMutedRef.current = false;
+        setMicMuted(false);
+        (window as any).hackerLog?.(`[MIC] unmuted (page refocused)`, "debug");
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
     window.addEventListener("keyup", handleKeyUp);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
       window.removeEventListener("keyup", handleKeyUp);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
-  }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen, micMuted]);
+  }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden" style={{ height: "100dvh", paddingBottom: "100px" }}>
