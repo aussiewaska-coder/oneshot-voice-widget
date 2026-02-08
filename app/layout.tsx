@@ -21,6 +21,13 @@ const ubuntu = Ubuntu({
 export const metadata: Metadata = {
   title: "OneShotBot Voice Agent",
   description: "Voice-powered AI agent with mood orb visualization",
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
+    viewportFit: "cover",
+  },
 };
 
 export default function RootLayout({
