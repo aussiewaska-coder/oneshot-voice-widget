@@ -6,7 +6,7 @@ import { saveTurn, loadMemory, buildContextPrompt } from "@/lib/memory";
  */
 export async function GET() {
   try {
-    const memory = loadMemory();
+    const memory = await loadMemory();
     const contextPrompt = buildContextPrompt(memory);
     return NextResponse.json({
       turns: memory.turns,
@@ -37,7 +37,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Role must be user or agent" }, { status: 400 });
     }
 
-    const memory = saveTurn(role, text);
+    const memory = await saveTurn(role, text);
     return NextResponse.json({ ok: true, totalTurns: memory.totalTurns });
   } catch (error) {
     console.error("Failed to save turn:", error);

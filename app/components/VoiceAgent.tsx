@@ -177,15 +177,6 @@ export default function VoiceAgent() {
     [conversation]
   );
 
-  const handleSendActivity = useCallback(() => {
-    if (!isConnectedRef.current) return;
-    try {
-      conversation.sendUserActivity();
-    } catch {
-      // Swallow if WS already closed
-    }
-  }, [conversation]);
-
   const handleToggleMic = useCallback(() => {
     setMicMuted((prev) => !prev);
   }, []);
@@ -208,7 +199,6 @@ export default function VoiceAgent() {
         onConnect={handleConnect}
         onDisconnect={handleDisconnect}
         onSendMessage={handleSendMessage}
-        onSendActivity={handleSendActivity}
         onToggleMic={handleToggleMic}
       />
     </div>

@@ -1,3 +1,4 @@
+import { kv } from "@vercel/kv";
 import fs from "fs";
 import path from "path";
 
@@ -14,8 +15,9 @@ export interface ConversationMemory {
 }
 
 const MAX_TURNS = 50;
+const MEMORY_KEY = "conversation:memory";
 
-// Vercel serverless: only /tmp is writable. Local dev: use ./data/
+// Local fallback for dev (when KV is not available)
 function getMemoryPath(): string {
   const localDir = path.join(process.cwd(), "data");
   try {
@@ -28,12 +30,11 @@ function getMemoryPath(): string {
     fs.unlinkSync(testFile);
     return path.join(localDir, "conversation.json");
   } catch {
-    // Fallback to /tmp (Vercel)
     return "/tmp/conversation.json";
   }
 }
 
-function readMemory(): ConversationMemory {
+function readMemoryLocal(): ConversationMemory {
   const filePath = getMemoryPath();
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
@@ -43,16 +44,35 @@ function readMemory(): ConversationMemory {
   }
 }
 
-function writeMemory(memory: ConversationMemory): void {
+function writeMemoryLocal(memory: ConversationMemory): void {
   const filePath = getMemoryPath();
   fs.writeFileSync(filePath, JSON.stringify(memory, null, 2), "utf-8");
+}
+
+async function readMemoryRedis(): Promise<ConversationMemory> {
+  try {
+    const stored = await kv.get<ConversationMemory>(MEMORY_KEY);
+    return stored || { turns: [], totalTurns: 0, trimmedAt: null };
+  } catch {
+    // KV not available, fallback to local
+    return readMemoryLocal();
+  }
+}
+
+async function writeMemoryRedis(memory: ConversationMemory): Promise<void> {
+  try {
+    await kv.set(MEMORY_KEY, memory);
+  } catch {
+    // KV not available, fallback to local
+    writeMemoryLocal(memory);
+  }
 }
 
 /**
  * Append a single turn. Trims to MAX_TURNS. Writes immediately.
  */
-export function saveTurn(role: "user" | "agent", text: string): ConversationMemory {
-  const memory = readMemory();
+export async function saveTurn(role: "user" | "agent", text: string): Promise<ConversationMemory> {
+  const memory = await readMemoryRedis();
 
   memory.turns.push({
     role,
@@ -68,15 +88,15 @@ export function saveTurn(role: "user" | "agent", text: string): ConversationMemo
     memory.trimmedAt = new Date().toISOString();
   }
 
-  writeMemory(memory);
+  await writeMemoryRedis(memory);
   return memory;
 }
 
 /**
  * Load the last N turns + metadata. No mutations.
  */
-export function loadMemory(lastN?: number): ConversationMemory {
-  const memory = readMemory();
+export async function loadMemory(lastN?: number): Promise<ConversationMemory> {
+  const memory = await readMemoryRedis();
   if (lastN && lastN < memory.turns.length) {
     return {
       ...memory,
