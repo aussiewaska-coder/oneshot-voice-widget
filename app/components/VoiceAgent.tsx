@@ -58,6 +58,9 @@ export default function VoiceAgent() {
   const intentionalDisconnectRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const connectionStartTimeRef = useRef<number | null>(null);
+  const commandPressedRef = useRef(false);
+  const commandMutedRef = useRef(false);
+  const lastCommandPressRef = useRef(0);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -446,9 +449,37 @@ This is context from our previous conversation. Remember these details when resp
     };
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal)
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal), Command (hold to mute, double-tap to toggle)
   useEffect(() => {
+    const log = (window as any).hackerLog;
+
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Command key (Meta) - hold to mute, double-tap to toggle
+      if (e.code === "MetaLeft" || e.code === "MetaRight") {
+        const now = Date.now();
+        const timeSinceLastPress = now - lastCommandPressRef.current;
+
+        // Double-tap detection (within 300ms)
+        if (timeSinceLastPress < 300 && timeSinceLastPress > 0) {
+          e.preventDefault();
+          // Toggle mute
+          setMicMuted((prev) => !prev);
+          commandMutedRef.current = false;
+          log?.(`[MIC] toggled mute to ${!micMuted}`, "info");
+        } else {
+          // Single press - mute while held
+          commandPressedRef.current = true;
+          if (!commandMutedRef.current) {
+            commandMutedRef.current = true;
+            setMicMuted(true);
+            log?.(`[MIC] muted (hold Command)`, "debug");
+          }
+        }
+
+        lastCommandPressRef.current = now;
+        return;
+      }
+
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
         e.preventDefault();
         if (connectionStatus === "connected") {
@@ -482,9 +513,31 @@ This is context from our previous conversation. Remember these details when resp
       }
     };
 
+    const handleKeyUp = (e: KeyboardEvent) => {
+      // Release mute when Command is released
+      if (e.code === "MetaLeft" || e.code === "MetaRight") {
+        commandPressedRef.current = false;
+        if (commandMutedRef.current) {
+          // Only unmute if it was muted by holding Command (not by toggle)
+          const timeSincePress = Date.now() - lastCommandPressRef.current;
+          if (timeSincePress > 50) {
+            // Give some time buffer to detect double-tap
+            setMicMuted(false);
+            commandMutedRef.current = false;
+            const log = (window as any).hackerLog;
+            log?.(`[MIC] unmuted (released Command)`, "debug");
+          }
+        }
+      }
+    };
+
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen]);
+    window.addEventListener("keyup", handleKeyUp);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
+    };
+  }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen, micMuted]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
