@@ -29,7 +29,7 @@ function persistTurn(role: "user" | "agent", text: string) {
 }
 
 export default function VoiceAgent() {
-  const [palette, setPalette] = useState(1);
+  const [palette, setPalette] = useState(5);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [inputVolume, setInputVolume] = useState(0);
   const [outputVolume, setOutputVolume] = useState(0);
