@@ -461,6 +461,104 @@ Key commits:
 
 ---
 
+## Major Deployment: Twilio Phone Integration
+
+### Overview
+Wire incoming Twilio phone calls to the ElevenLabs voice bot. User can answer calls with the agent + monitor/barge-in via browser.
+
+### Twilio Account Status
+- ✅ Account set up
+- ⏳ Paid phone number (pending)
+- Once ready: Link to ElevenLabs via native integration or custom Media Streams bridge
+
+### Two Implementation Approaches
+
+#### Approach 1: Native ElevenLabs Integration (Quick, No-Code)
+**Best for:** Getting calls working immediately
+**Effort:** 15 minutes, no backend code needed
+
+**Steps:**
+1. Go to ElevenLabs dashboard → Phone Numbers
+2. Import Twilio number (paste Account SID + Auth Token)
+3. Link phone number to your existing agent
+4. Done - incoming calls connect to agent automatically
+
+**Limitations:**
+- No built-in monitoring/barge-in interface
+- Can add monitoring later if needed
+
+**References:**
+- [ElevenLabs Twilio Integration](https://elevenlabs.io/agents/integrations/twilio)
+- [Twilio Native Integration Guide](https://www.twilio.com/en-us/blog/developers/tutorials/integrations/build-twilio-voice-elevenlabs-agents-integration)
+
+#### Approach 2: Custom Media Streams Bridge (Full Control, Complex)
+**Best for:** Monitoring calls + future barge-in capabilities
+**Effort:** 2-5 days, requires Node.js backend
+
+**Architecture:**
+```
+Phone Call
+    ↓
+Twilio (receives call)
+    ↓ (TwiML webhook)
+Node.js Backend
+    ↓ (WebSocket)
+Twilio Media Streams ↔ ElevenLabs Conversational AI
+    ↓
+Browser Web Client (monitoring via WebSocket)
+```
+
+**Components to Build:**
+1. **Backend Service (Node.js/Express)**
+   - `GET /incoming-call` → Returns TwiML with `<Connect><Stream>`
+   - `WSS /media` → Bridges Twilio audio ↔ ElevenLabs WebSocket
+   - `WSS /monitor` → Broadcasts audio to browser clients
+   - Audio codec conversion (mulaw ↔ ElevenLabs format)
+
+2. **Frontend Monitoring UI**
+   - Real-time call list with speaker names
+   - Audio player to listen live
+   - Connection status indicator
+   - Future: Barge-in button (requires SIP signaling)
+
+**Key Technical Details:**
+- Twilio Media Streams sends/receives mulaw-encoded audio (base64 JSON)
+- Must bridge between Twilio's WebSocket format and ElevenLabs' format
+- Handle 2-way audio synchronization (caller → agent → back to caller)
+- Status callbacks for call lifecycle (connect, disconnect, errors)
+
+**References:**
+- [Twilio Media Streams Docs](https://www.twilio.com/docs/voice/media-streams)
+- [TwiML Stream Verb](https://www.twilio.com/docs/voice/twiml/stream)
+- [ElevenLabs Twilio Integration](https://elevenlabs.io/agents/integrations/twilio)
+- [GitHub: elevenlabs-twilio-i-o (reference implementation)](https://github.com/nibodev/elevenlabs-twilio-i-o)
+
+**Recommended Libraries:**
+- `twilio` (npm) - SDK for Twilio REST API
+- `ws` (npm) - WebSocket server for media streams
+- Express.js with WebSocket support (socket.io or native ws)
+
+### Required Environment Variables
+Add to `.env.local`:
+```
+TWILIO_ACCOUNT_SID=<your-account-sid>
+TWILIO_AUTH_TOKEN=<your-auth-token>
+TWILIO_PHONE_NUMBER=+1XXXXXXXXXX
+# ElevenLabs already configured
+```
+
+### Next Steps When Ready
+1. Decide: Native (quick) vs Custom (full control)?
+2. If Native: One-click setup in ElevenLabs dashboard
+3. If Custom: Plan backend service, set up Media Streams handler
+4. Deploy: Run backend on Vercel, Heroku, or dedicated server
+5. Test: Call Twilio number, verify agent answers and responds
+6. Monitor: Use HackerLog to debug call issues
+
+**Decision Point:** Once Twilio number is active, decide on approach and launch the appropriate implementation.
+
+---
+
 ## Debugging
 
 ### HackerLog Console
