@@ -7,6 +7,7 @@ import GlassChat from "./GlassChat";
 import PaletteSwitcher from "./PaletteSwitcher";
 import HackerLog from "./HackerLog";
 import Logo from "./Logo";
+import FadeIn from "./FadeIn";
 import { ChatMessage } from "./MessageBubble";
 
 // Fire-and-forget save — never blocks the conversation
@@ -312,6 +313,7 @@ This is context from our previous conversation. Remember these details when resp
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
+      <FadeIn />
       <OrbBackground
         palette={palette}
         inputVolume={inputVolume}
