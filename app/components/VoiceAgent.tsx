@@ -562,7 +562,7 @@ This is context from our previous conversation. Remember these details when resp
   }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen, micMuted]);
 
   return (
-    <div className="relative w-full h-screen overflow-hidden" style={{ height: "100dvh" }}>
+    <div className="relative w-full h-screen overflow-hidden" style={{ height: "100dvh", paddingBottom: "100px" }}>
       <FadeIn />
 
       {/* Orb - always shown, sizing changes based on viewport */}
