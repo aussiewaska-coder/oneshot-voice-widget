@@ -7,6 +7,17 @@ import GlassChat from "./GlassChat";
 import PaletteSwitcher from "./PaletteSwitcher";
 import { ChatMessage } from "./MessageBubble";
 
+// Fire-and-forget save — never blocks the conversation
+function persistTurn(role: "user" | "agent", text: string) {
+  fetch("/api/memory", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ role, text }),
+  }).catch(() => {
+    // Memory loss is acceptable; blocking conversation is not
+  });
+}
+
 export default function VoiceAgent() {
   const [palette, setPalette] = useState(1);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -19,8 +30,8 @@ export default function VoiceAgent() {
 
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
-  // Synchronous flag the RAF loop can check without waiting for React state
   const isConnectedRef = useRef(false);
+  const contextInjectedRef = useRef(false);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -31,10 +42,32 @@ export default function VoiceAgent() {
     setOutputVolume(0);
   }, []);
 
+  // Load previous conversation into the chat panel on mount
+  useEffect(() => {
+    fetch("/api/memory")
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.turns && data.turns.length > 0) {
+          const loaded: ChatMessage[] = data.turns.map(
+            (t: { role: string; text: string }, i: number) => ({
+              id: `history-${i}`,
+              role: t.role as "user" | "agent",
+              text: t.text,
+              isFinal: true,
+            })
+          );
+          setMessages(loaded);
+          messageIdCounter.current = loaded.length;
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const conversation = useConversation({
     micMuted,
     onConnect: () => {
       isConnectedRef.current = true;
+      contextInjectedRef.current = false;
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
@@ -45,10 +78,14 @@ export default function VoiceAgent() {
     onMessage: (message) => {
       const id = `msg-${messageIdCounter.current++}`;
       const role = message.source === "user" ? "user" : "agent";
+
       setMessages((prev) => [
         ...prev,
         { id, role, text: message.message, isFinal: true },
       ]);
+
+      // Persist every turn to disk immediately
+      persistTurn(role, message.message);
     },
     onError: (error) => {
       console.error("Conversation error:", error);
@@ -58,7 +95,7 @@ export default function VoiceAgent() {
     },
   });
 
-  // Volume polling via requestAnimationFrame — guards with synchronous ref
+  // Volume polling
   const pollVolume = useCallback(() => {
     if (!isConnectedRef.current) {
       animFrameRef.current = null;
@@ -68,12 +105,11 @@ export default function VoiceAgent() {
       setInputVolume(conversation.getInputVolume());
       setOutputVolume(conversation.getOutputVolume());
     } catch {
-      // WebSocket may have closed between the ref check and the call
+      // WebSocket may have closed
     }
     animFrameRef.current = requestAnimationFrame(pollVolume);
   }, [conversation]);
 
-  // Start volume polling when connected
   useEffect(() => {
     if (connectionStatus === "connected") {
       animFrameRef.current = requestAnimationFrame(pollVolume);
@@ -86,22 +122,41 @@ export default function VoiceAgent() {
     };
   }, [connectionStatus, pollVolume]);
 
+  // Inject memory context once after connection is established
+  useEffect(() => {
+    if (connectionStatus !== "connected") return;
+    if (contextInjectedRef.current) return;
+    contextInjectedRef.current = true;
+
+    // Small delay to ensure the session is fully ready
+    const timer = setTimeout(() => {
+      fetch("/api/memory")
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.contextPrompt && isConnectedRef.current) {
+            try {
+              conversation.sendContextualUpdate(data.contextPrompt);
+            } catch {
+              // Session may not be ready yet
+            }
+          }
+        })
+        .catch(() => {});
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [connectionStatus, conversation]);
+
   const handleConnect = useCallback(async () => {
     try {
       setConnectionStatus("connecting");
-
-      // Request mic permission
       await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // Fetch signed URL from our API route
       const response = await fetch("/api/get-signed-url");
       if (!response.ok) throw new Error("Failed to get signed URL");
       const { signedUrl } = await response.json();
 
-      // Start conversation session
-      await conversation.startSession({
-        signedUrl,
-      });
+      await conversation.startSession({ signedUrl });
     } catch (error) {
       console.error("Failed to connect:", error);
       setConnectionStatus("disconnected");
@@ -109,7 +164,6 @@ export default function VoiceAgent() {
   }, [conversation]);
 
   const handleDisconnect = useCallback(async () => {
-    // Stop polling immediately — don't wait for onDisconnect callback
     isConnectedRef.current = false;
     stopPolling();
     await conversation.endSession();
@@ -124,6 +178,8 @@ export default function VoiceAgent() {
         ...prev,
         { id, role: "user", text, isFinal: true },
       ]);
+      // Typed messages also get persisted
+      persistTurn("user", text);
     },
     [conversation]
   );
