@@ -205,3 +205,15 @@ body {
     opacity: 1;
   }
 }
+
+/* Smooth closing animation */
+@keyframes genieOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) scaleX(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0) scaleX(0);
+  }
+}

@@ -27,7 +27,26 @@ interface HackerLogProps {
 export default function HackerLog({ palette = 5, onPaletteChange, connectionStatus = "disconnected" }: HackerLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isVisible, setIsVisible] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    closeTimeoutRef.current = setTimeout(() => {
+      setIsVisible(false);
+      setIsClosing(false);
+    }, 700); // Match the animation duration
+  };
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (closeTimeoutRef.current) {
+        clearTimeout(closeTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // Expose logger to window for use throughout the app
@@ -45,13 +64,19 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
   // Expose toggleHackerLog function to window for keyboard shortcuts
   useEffect(() => {
-    (window as any).toggleHackerLog = () => setIsVisible((prev) => !prev);
+    (window as any).toggleHackerLog = () => {
+      if (isVisible) {
+        handleClose();
+      } else {
+        setIsVisible(true);
+      }
+    };
     (window as any).openHackerLog = () => setIsVisible(true); // Keep for backwards compatibility
     return () => {
       delete (window as any).toggleHackerLog;
       delete (window as any).openHackerLog;
     };
-  }, []);
+  }, [isVisible]);
 
   const getTypeColor = (type: string) => {
     switch (type) {
@@ -85,7 +110,9 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
       {/* Log panel */}
       {isVisible && (
-        <div className="absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
+        <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg z-40 ${
+          isClosing ? "animate-[genieOut_0.7s_ease-in-out_forwards]" : "animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
+        }`} style={{
           transformOrigin: "left center",
         }}>
           {/* Top visualization section - Brain is thinking when online */}
@@ -204,7 +231,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
             <div className="flex items-center gap-2">
               <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
               <button
-                onClick={() => setIsVisible(false)}
+                onClick={handleClose}
                 className="text-green-400/40 hover:text-green-400 transition-colors p-1"
                 aria-label="Minimize logs"
                 title="Minimize logs"
