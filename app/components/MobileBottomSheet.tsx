@@ -162,17 +162,22 @@ export function MobileBottomSheet({
       {/* Drag Handle + Status Bar */}
       <div
         ref={dragHandleRef}
-        className="flex flex-col items-center gap-2.5 px-4 md:px-6 py-4 border-b border-white/8 touch-none select-none"
-        style={{ touchAction: "none" }}
+        className="flex flex-col items-center gap-3 px-4 py-5 border-b border-white/8 touch-none select-none"
+        style={{
+          touchAction: "none",
+          paddingTop: "max(1.25rem, calc(1.25rem + env(safe-area-inset-top)))"
+        }}
       >
         {/* Drag Handle Visual */}
-        <div className="w-12 h-1 rounded-full bg-white/20 hover:bg-white/30 transition-colors" />
+        <div className="w-12 h-1.5 rounded-full bg-white/30 hover:bg-white/40 transition-colors cursor-grab active:cursor-grabbing" />
 
         {/* Status Bar (only shown when collapsed or partial) */}
         {sheetState !== "full" && (
-          <div className="w-full flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 min-w-0 flex-shrink">
-              <div className="relative flex h-2 w-2 flex-shrink-0">
+          <div className="w-full flex items-center justify-between gap-4">
+            {/* Status Indicator + Text */}
+            <div className="flex items-center gap-2.5 min-w-0 flex-1">
+              {/* Connection Status Dot */}
+              <div className="relative flex h-2.5 w-2.5 flex-shrink-0">
                 {status === "connected" && (
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
                 )}
@@ -180,30 +185,46 @@ export function MobileBottomSheet({
                   <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
                 )}
                 <span
-                  className={`relative inline-flex h-2 w-2 rounded-full ${
+                  className={`relative inline-flex h-2.5 w-2.5 rounded-full transition-all ${
                     status === "connected"
-                      ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                      ? "bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.9)]"
                       : status === "connecting"
-                      ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
-                      : "bg-white/20"
+                      ? "bg-amber-400 shadow-[0_0_8px_rgba(251,191,36,0.9)]"
+                      : "bg-gray-500 shadow-[0_0_6px_rgba(107,114,128,0.6)]"
                   }`}
                 />
               </div>
-              <span className="text-white/60 truncate">
+
+              {/* Status Text */}
+              <span className="text-sm font-medium text-white/70 truncate">
                 {status === "connected" ? "Connected" : status === "connecting" ? "Connecting..." : "Offline"}
               </span>
             </div>
 
-            {/* Connect/Disconnect Button */}
+            {/* Connect/Disconnect Button - Prominent with Pink Glow */}
             <button
               onClick={status === "connected" ? onDisconnect : onConnect}
               disabled={status === "connecting"}
-              className={`text-xs font-bold px-4 py-1.5 rounded transition-all min-w-14 flex-shrink-0 ${
-                status === "connected"
-                  ? "bg-red-500/30 text-red-200 hover:bg-red-500/40"
-                  : "bg-white/15 text-white/90 hover:bg-white/25 shadow-[0_0_12px_rgba(236,72,153,0.6)]"
-              } disabled:opacity-30 disabled:cursor-not-allowed`}
-              style={status !== "connected" ? { boxShadow: "0 0 16px rgba(236, 72, 153, 0.7)" } : undefined}
+              className={`
+                font-bold text-sm px-5 py-2.5 rounded-lg transition-all
+                min-w-max flex-shrink-0
+                transform active:scale-95
+                focus:outline-none focus:ring-2 focus:ring-offset-0
+                ${
+                  status === "connected"
+                    ? "bg-red-500/40 text-red-100 hover:bg-red-500/50 border border-red-400/30 focus:ring-red-400/50"
+                    : "bg-pink-500/35 text-pink-50 hover:bg-pink-500/45 border border-pink-400/40 focus:ring-pink-400/50"
+                }
+                disabled:opacity-40 disabled:cursor-not-allowed disabled:transform-none
+              `}
+              style={
+                status !== "connected"
+                  ? {
+                      boxShadow: "0 0 20px rgba(236, 72, 153, 0.8), 0 0 40px rgba(236, 72, 153, 0.4)",
+                    }
+                  : undefined
+              }
+              title={status === "connected" ? "End conversation" : status === "connecting" ? "Connecting..." : "Start conversation"}
             >
               {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
             </button>
