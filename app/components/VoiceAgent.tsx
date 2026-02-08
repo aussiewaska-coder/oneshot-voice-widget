@@ -54,33 +54,11 @@ export default function VoiceAgent() {
     setOutputVolume(0);
   }, []);
 
-  // Load previous conversation into the chat panel on mount
+  // Intentionally don't load messages on mount - always start clear
+  // Memory is still loaded for system prompt injection when connecting
   useEffect(() => {
     const log = (window as any).hackerLog;
-    log?.(`[REDIS] QUERYING persistent conversation history...`, "debug");
-    fetch("/api/memory")
-      .then((r) => r.json())
-      .then((data) => {
-        if (data.turns && data.turns.length > 0) {
-          log?.(`[REDIS] ✓ LOADED ${data.turns.length} turns (${data.totalTurns} total lifetime)`, "success");
-          data.turns.forEach((t: any, i: number) => {
-            log?.(`  [${i + 1}] ${t.role.toUpperCase()}: "${t.text.substring(0, 50)}${t.text.length > 50 ? "..." : ""}"`, "info");
-          });
-          const loaded: ChatMessage[] = data.turns.map(
-            (t: { role: string; text: string }, i: number) => ({
-              id: `history-${i}`,
-              role: t.role as "user" | "agent",
-              text: t.text,
-              isFinal: true,
-            })
-          );
-          setMessages(loaded);
-          messageIdCounter.current = loaded.length;
-        } else {
-          log?.(`[REDIS] → empty (first conversation)`, "debug");
-        }
-      })
-      .catch((err) => log?.(`[REDIS] ✗ LOAD FAILED: ${err.message}`, "error"));
+    log?.(`[INIT] starting with empty chat display`, "debug");
   }, []);
 
   const conversation = useConversation({
@@ -207,7 +185,6 @@ export default function VoiceAgent() {
       log?.(`[SESSION] obtained signed url`, "success");
 
       // Load conversation history for system prompt injection
-      let customFirstMessage: string | null = null;
       let customSystemPrompt: string | null = null;
 
       if (memRes && memRes.ok) {
@@ -215,29 +192,6 @@ export default function VoiceAgent() {
         if (memData.turns && memData.turns.length > 0) {
           log?.(`[REDIS] ✓ LOADED ${memData.turns.length} turns for override`, "success");
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
-
-          // Build a custom first message that acknowledges the conversation history
-          // Use agent's last response as context (more meaningful than user's last message)
-          const lastAgentMsg = memData.turns.filter((t: any) => t.role === "agent").pop();
-          const lastUserMsg = memData.turns.filter((t: any) => t.role === "user").pop();
-
-          if (lastAgentMsg) {
-            // Extract first meaningful phrase from agent's last response (first sentence or ~60 chars)
-            const agentText = lastAgentMsg.text;
-            const firstSentence = agentText.split(/[.!?]+/)[0] || agentText.substring(0, 60);
-            const snippet = firstSentence.substring(0, 60);
-            customFirstMessage = `Alright mate, we were just talking about ${snippet.toLowerCase()}${snippet.length === 60 ? "..." : ""} Where were we?`;
-            log?.(`[OVERRIDE] Custom first message generated from agent context`, "success");
-            log?.(`  "${customFirstMessage}"`, "info");
-          } else if (lastUserMsg) {
-            // Fallback to user message if no agent message
-            const snippet = lastUserMsg.text.substring(0, 50);
-            customFirstMessage = `Gday, back for more? We were discussing "${snippet}${lastUserMsg.text.length > 50 ? "..." : ""}"`;
-            log?.(`[OVERRIDE] Custom first message generated from user context`, "success");
-            log?.(`  "${customFirstMessage}"`, "info");
-          } else {
-            log?.(`[REDIS] → no messages in history, using default first message`, "debug");
-          }
 
           // Build enhanced system prompt with conversation history
           const basePrompt = `# SOUL.md - The Outlaw Twin
@@ -286,18 +240,17 @@ This is context from our previous conversation. Remember these details when resp
         }
       }
 
-      log?.(`[SESSION] initiating websocket${customFirstMessage ? " with context" : ""}...`, "debug");
+      log?.(`[SESSION] initiating websocket${customSystemPrompt ? " with context" : ""}...`, "debug");
 
-      // Build session config with overrides (both firstMessage and system prompt)
+      // Build session config with overrides (system prompt only, no firstMessage for silent start)
       const sessionConfig: any = { signedUrl };
-      if (customFirstMessage || customSystemPrompt) {
+      if (customSystemPrompt) {
         sessionConfig.overrides = {
           agent: {
-            ...(customFirstMessage && { firstMessage: customFirstMessage }),
-            ...(customSystemPrompt && { prompt: { prompt: customSystemPrompt } }),
+            prompt: { prompt: customSystemPrompt },
           },
         };
-        log?.(`[OVERRIDES] Applied to startSession config`, "debug");
+        log?.(`[OVERRIDES] Applied system prompt to startSession config (silent start)`, "debug");
       }
 
       await conversation.startSession(sessionConfig);
@@ -343,6 +296,13 @@ This is context from our previous conversation. Remember these details when resp
     setMicMuted((prev) => !prev);
   }, []);
 
+  const handleClearMessages = useCallback(() => {
+    const log = (window as any).hackerLog;
+    log?.(`[CLEAR] clearing chat display (memory preserved)`, "debug");
+    setMessages([]);
+    messageIdCounter.current = 0;
+  }, []);
+
   return (
     <div className="relative w-full h-screen overflow-hidden">
       <OrbBackground
@@ -362,6 +322,7 @@ This is context from our previous conversation. Remember these details when resp
         onDisconnect={handleDisconnect}
         onSendMessage={handleSendMessage}
         onToggleMic={handleToggleMic}
+        onClearMessages={handleClearMessages}
       />
       <HackerLog />
     </div>
