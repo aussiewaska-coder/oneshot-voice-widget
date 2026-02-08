@@ -164,34 +164,23 @@ export default function VoiceAgent() {
   // Heartbeat to keep connection alive (every 1 minute)
   useEffect(() => {
     const log = (window as any).hackerLog;
-    if (connectionStatus === "connected") {
-      // Only activate if not already active
-      if (!heartbeatRef.current) {
-        log?.(`[HEARTBEAT] ♥ activated (1min interval)`, "success");
-        heartbeatRef.current = setInterval(() => {
-          try {
-            // Send a keep-alive context update to prevent timeout
-            conversation.sendContextualUpdate(".");
-            log?.(`[HEARTBEAT] ♥ pulse sent (keep-alive)`, "success");
-          } catch (err) {
-            log?.(`[HEARTBEAT] ✗ pulse failed: ${err}`, "error");
-          }
-        }, 60000); // 60 seconds = 1 minute
-      }
-    } else {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
+    if (connectionStatus === "connected" && !heartbeatRef.current) {
+      log?.(`[HEARTBEAT] ♥ activated (1min interval)`, "success");
+      heartbeatRef.current = setInterval(() => {
+        try {
+          conversation.sendContextualUpdate(".");
+          log?.(`[HEARTBEAT] ♥ pulse sent (keep-alive)`, "success");
+        } catch (err) {
+          log?.(`[HEARTBEAT] ✗ pulse failed: ${err}`, "error");
+        }
+      }, 60000); // 60 seconds = 1 minute
+      return () => {
+        clearInterval(heartbeatRef.current!);
         heartbeatRef.current = null;
         log?.(`[HEARTBEAT] ♥ deactivated`, "debug");
-      }
+      };
     }
-    return () => {
-      if (heartbeatRef.current) {
-        clearInterval(heartbeatRef.current);
-        heartbeatRef.current = null;
-      }
-    };
-  }, [connectionStatus, conversation]);
+  }, [connectionStatus]);
 
   const handleConnect = useCallback(async () => {
     const log = (window as any).hackerLog;
