@@ -251,22 +251,39 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
             <span className="relative text-green-400 font-bold text-[10px] z-10">HACKER_LOG.SYS</span>
 
-            {/* Palette selector */}
-            <div className="relative flex items-center gap-1.5 z-10">
-              {PALETTE_COLORS.map((p) => (
-                <button
-                  key={p.id}
-                  onClick={() => onPaletteChange?.(p.id)}
-                  className={`w-4 h-4 rounded-full transition-all cursor-pointer ${
-                    palette === p.id ? "ring-2 ring-white scale-110" : "hover:scale-105"
-                  }`}
-                  style={{
-                    background: `linear-gradient(135deg, ${p.bg0}, ${p.bg1})`,
-                  }}
-                  title={`Palette ${p.id}`}
-                  aria-label={`Palette ${p.id}`}
-                />
-              ))}
+            {/* Palette selector and doc button */}
+            <div className="relative flex items-center gap-2 z-10">
+              <div className="flex items-center gap-1.5">
+                {PALETTE_COLORS.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => onPaletteChange?.(p.id)}
+                    className={`w-4 h-4 rounded-full transition-all cursor-pointer ${
+                      palette === p.id ? "ring-2 ring-white scale-110" : "hover:scale-105"
+                    }`}
+                    style={{
+                      background: `linear-gradient(135deg, ${p.bg0}, ${p.bg1})`,
+                    }}
+                    title={`Palette ${p.id}`}
+                    aria-label={`Palette ${p.id}`}
+                  />
+                ))}
+              </div>
+
+              {/* Doc button */}
+              <button
+                onClick={() => (window as any).toggleDocModal?.()}
+                className="p-1 rounded text-green-400/60 hover:text-green-400 transition-colors"
+                aria-label="Open documentation"
+                title="System Documentation (Press D)"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+              </button>
             </div>
 
             <div className="relative flex items-center gap-2 z-10">

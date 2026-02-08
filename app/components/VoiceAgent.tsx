@@ -1,7 +1,7 @@
 "use client";
 
 import { useConversation } from "@elevenlabs/react";
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import OrbBackground from "./OrbBackground";
 import GlassChat from "./GlassChat";
 import PaletteSwitcher from "./PaletteSwitcher";
@@ -9,10 +9,12 @@ import HackerLog from "./HackerLog";
 import Logo from "./Logo";
 import FadeIn from "./FadeIn";
 import CapabilitiesList from "./CapabilitiesList";
+import DocModal from "./DocModal";
 import { ChatMessage } from "./MessageBubble";
+import type { SystemHealth } from "./HealthDashboard";
 
 // Fire-and-forget save — never blocks the conversation
-function persistTurn(role: "user" | "agent", text: string) {
+function persistTurn(role: "user" | "agent", text: string, onWriteSuccess?: (layer: "redis" | "local-fs") => void) {
   const log = (window as any).hackerLog;
   log?.(`[REDIS] WRITE ${role.toUpperCase()} → "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}"`, "debug");
   fetch("/api/memory", {
@@ -23,6 +25,7 @@ function persistTurn(role: "user" | "agent", text: string) {
     .then((res) => {
       if (res.ok) {
         log?.(`[REDIS] ✓ COMMITTED to persistent store`, "success");
+        onWriteSuccess?.("redis");
       } else {
         log?.(`[REDIS] ✗ HTTP ${res.status}`, "error");
       }
@@ -37,9 +40,15 @@ export default function VoiceAgent() {
   const [outputVolume, setOutputVolume] = useState(0);
   const [micMuted, setMicMuted] = useState(false);
   const [isChatOpen, setIsChatOpen] = useState(false);
+  const [docModalOpen, setDocModalOpen] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<
     "connected" | "disconnected" | "connecting"
   >("disconnected");
+  const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt">("prompt");
+  const [memoryLayer, setMemoryLayer] = useState<"redis" | "local-fs" | "in-memory">("in-memory");
+  const [memoryTurns, setMemoryTurns] = useState(0);
+  const [memoryWriteSuccess, setMemoryWriteSuccess] = useState(false);
+  const [logStats, setLogStats] = useState({ errorCount: 0, warningCount: 0 });
 
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
@@ -48,6 +57,7 @@ export default function VoiceAgent() {
   const pendingContextRef = useRef<string | null>(null);
   const intentionalDisconnectRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const connectionStartTimeRef = useRef<number | null>(null);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -71,6 +81,7 @@ export default function VoiceAgent() {
       const log = (window as any).hackerLog;
       log?.(`[WEBSOCKET] connected to agent`, "success");
       isConnectedRef.current = true;
+      connectionStartTimeRef.current = Date.now();
       setConnectionStatus("connected");
 
       // Inject pending context immediately after connect
@@ -89,6 +100,7 @@ export default function VoiceAgent() {
       const log = (window as any).hackerLog;
       log?.(`[WEBSOCKET] disconnected`, "debug");
       isConnectedRef.current = false;
+      connectionStartTimeRef.current = null;
       stopPolling();
       setConnectionStatus("disconnected");
 
@@ -117,7 +129,10 @@ export default function VoiceAgent() {
       ]);
 
       // Persist every turn to disk immediately
-      persistTurn(role, message.message);
+      persistTurn(role, message.message, (layer) => {
+        setMemoryLayer(layer);
+        setMemoryWriteSuccess(true);
+      });
     },
     onError: (error) => {
       const log = (window as any).hackerLog;
@@ -193,6 +208,9 @@ export default function VoiceAgent() {
 
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
+        setMemoryTurns(memData.totalTurns || 0);
+        setMemoryLayer("redis");
+        setMemoryWriteSuccess(true);
         if (memData.turns && memData.turns.length > 0) {
           log?.(`[REDIS] ✓ LOADED ${memData.turns.length} turns for override`, "success");
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
@@ -248,6 +266,19 @@ This is context from our previous conversation. Remember these details when resp
         } else {
           log?.(`[REDIS] → no prior context (fresh session)`, "debug");
         }
+      } else {
+        // Redis failed, try to detect fallback layer
+        setMemoryLayer("local-fs");
+        setMemoryWriteSuccess(false);
+      }
+
+      // Check mic permission
+      try {
+        const micPerm = await navigator.permissions.query({ name: "microphone" });
+        setMicPermission(micPerm.state as "granted" | "denied" | "prompt");
+      } catch (err) {
+        // Some browsers don't support permission query
+        setMicPermission("prompt");
       }
 
       log?.(`[SESSION] initiating websocket${customSystemPrompt ? " with context" : ""}...`, "debug");
@@ -297,7 +328,10 @@ This is context from our previous conversation. Remember these details when resp
         { id, role: "user", text, isFinal: true },
       ]);
       // Typed messages also get persisted
-      persistTurn("user", text);
+      persistTurn("user", text, (layer) => {
+        setMemoryLayer(layer);
+        setMemoryWriteSuccess(true);
+      });
     },
     [conversation]
   );
@@ -313,7 +347,106 @@ This is context from our previous conversation. Remember these details when resp
     messageIdCounter.current = 0;
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (toggle logs)
+  // Compute health data on-demand
+  const health = useMemo(() => {
+    if (typeof window === "undefined") {
+      // Return default health during SSR
+      return {
+        connection: { status: "offline" as const, wsStatus: "disconnected" as const, uptimeMs: 0, lastConnected: null },
+        memory: { status: "offline" as const, activeLayer: "in-memory" as const, totalTurns: 0, lastWriteSuccess: false },
+        audio: { status: "offline" as const, micPermission: "prompt" as const, micMuted: false, inputActive: false, outputActive: false },
+        logs: { status: "healthy" as const, errorCount: 0, warningCount: 0 },
+        overall: "offline" as const,
+      };
+    }
+
+    const log = (window as any).hackerLog as any;
+    const logs = log?.logs || [];
+    const errorCount = logs.filter((l: any) => l.type === "error").length;
+    const warningCount = logs.filter((l: any) => l.type === "debug").length;
+
+    const connectionUptimeMs =
+      connectionStartTimeRef.current && connectionStatus === "connected"
+        ? Date.now() - connectionStartTimeRef.current
+        : 0;
+
+    const health: SystemHealth = {
+      connection: {
+        status:
+          connectionStatus === "connected"
+            ? "healthy"
+            : connectionStatus === "connecting"
+              ? "degraded"
+              : "offline",
+        wsStatus: connectionStatus as "connected" | "disconnected" | "connecting",
+        uptimeMs: connectionUptimeMs,
+        lastConnected: connectionStatus === "connected" ? new Date().toLocaleTimeString() : null,
+      },
+      memory: {
+        status: memoryWriteSuccess ? "healthy" : "degraded",
+        activeLayer: memoryLayer,
+        totalTurns: memoryTurns,
+        lastWriteSuccess: memoryWriteSuccess,
+      },
+      audio: {
+        status:
+          micPermission === "denied"
+            ? "offline"
+            : micMuted || (!inputVolume && !outputVolume)
+              ? "degraded"
+              : "healthy",
+        micPermission,
+        micMuted,
+        inputActive: inputVolume > 0.05,
+        outputActive: outputVolume > 0.05,
+      },
+      logs: {
+        status: errorCount > 5 ? "critical" : errorCount > 0 || warningCount > 3 ? "warning" : "healthy",
+        errorCount,
+        warningCount,
+      },
+      overall: "healthy" as const,
+    };
+
+    // Compute overall status
+    const statuses = [
+      health.connection.status,
+      health.memory.status,
+      health.audio.status,
+      health.logs.status,
+    ];
+    if (statuses.includes("offline") && connectionStatus === "disconnected") {
+      health.overall = "offline";
+    } else if (statuses.includes("critical")) {
+      health.overall = "critical";
+    } else if (statuses.includes("degraded") || statuses.includes("warning")) {
+      health.overall = "degraded";
+    }
+
+    return health;
+  }, [
+    connectionStatus,
+    connectionStartTimeRef,
+    inputVolume,
+    outputVolume,
+    micMuted,
+    micPermission,
+    memoryLayer,
+    memoryTurns,
+    memoryWriteSuccess,
+  ]);
+
+  // Expose toggleDocModal to window
+  useEffect(() => {
+    (window as any).toggleDocModal = () => {
+      setDocModalOpen((prev) => !prev);
+    };
+    return () => {
+      delete (window as any).toggleDocModal;
+    };
+  }, []);
+
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (toggle logs), D (doc modal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
@@ -338,6 +471,9 @@ This is context from our previous conversation. Remember these details when resp
       } else if (e.code === "Tab") {
         e.preventDefault();
         (window as any).toggleHackerLog?.();
+      } else if (e.code === "KeyD" && !e.metaKey && !e.ctrlKey) {
+        e.preventDefault();
+        (window as any).toggleDocModal?.();
       }
     };
 
@@ -372,6 +508,7 @@ This is context from our previous conversation. Remember these details when resp
         onChatOpenChange={setIsChatOpen}
       />
       <HackerLog palette={palette} onPaletteChange={setPalette} connectionStatus={connectionStatus} />
+      <DocModal isOpen={docModalOpen} onClose={() => setDocModalOpen(false)} health={health} />
     </div>
   );
 }
