@@ -113,19 +113,20 @@ export default function OrbBackground({
   };
 
   // Mobile-specific styling
-  const containerClass = isMobile ? "absolute top-0 left-0 w-full h-[33vh]" : `${styles.container}`;
+  const containerClass = isMobile ? "absolute top-0 left-0 w-full h-[33vh] flex items-center justify-center" : `${styles.container}`;
   const blurIntensity = lowPerformance ? 20 : isMobile ? 30 : 60;
+  const mobileScale = isMobile ? 1.3 : 1; // Zoom in 30% on mobile
 
   return (
     <div
-      className={`${containerClass} ${paletteClass} cursor-pointer relative`}
+      className={`${containerClass} ${paletteClass} cursor-pointer relative overflow-hidden`}
       onClick={handleOrbClick}
       style={isMobile ? { filter: `blur(${blurIntensity / 100}px)` } : undefined}
     >
       <div
         className={styles.blobs}
         style={{
-          transform: `translate(${offsetX}%, ${offsetY}%) scale(${scale})`,
+          transform: `translate(${offsetX}%, ${offsetY}%) scale(${scale * mobileScale})`,
           transition: "transform 2000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }}
       >
