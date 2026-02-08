@@ -230,7 +230,7 @@ export default function GlassChat({
         <button
           onClick={status === "connected" ? onDisconnect : onConnect}
           disabled={status === "connecting"}
-          className={`relative px-5 py-2.5 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
+          className={`relative px-6 py-3 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
             status === "connected"
               ? "bg-white/[0.04] text-white/30 hover:bg-red-500/15 hover:text-red-300"
               : "bg-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white/90"

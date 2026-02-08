@@ -42,6 +42,7 @@ export default function VoiceAgent() {
   const isConnectedRef = useRef(false);
   const contextInjectedRef = useRef(false);
   const pendingContextRef = useRef<string | null>(null);
+  const heartbeatRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -159,6 +160,28 @@ export default function VoiceAgent() {
       }
     };
   }, [connectionStatus, pollVolume]);
+
+  // Heartbeat to keep connection alive (every 1 minute)
+  useEffect(() => {
+    if (connectionStatus === "connected") {
+      const log = (window as any).hackerLog;
+      heartbeatRef.current = setInterval(() => {
+        try {
+          // Send a keep-alive context update to prevent timeout
+          conversation.sendContextualUpdate(".");
+          log?.(`[HEARTBEAT] keep-alive sent`, "debug");
+        } catch (err) {
+          log?.(`[HEARTBEAT] failed: ${err}`, "debug");
+        }
+      }, 60000); // 60 seconds = 1 minute
+    }
+    return () => {
+      if (heartbeatRef.current) {
+        clearInterval(heartbeatRef.current);
+        heartbeatRef.current = null;
+      }
+    };
+  }, [connectionStatus, conversation]);
 
   const handleConnect = useCallback(async () => {
     const log = (window as any).hackerLog;
