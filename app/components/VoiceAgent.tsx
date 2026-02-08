@@ -189,8 +189,10 @@ export default function VoiceAgent() {
       const { signedUrl } = await urlRes.json();
       log?.(`[SESSION] obtained signed url`, "success");
 
-      // Load conversation history for context injection
+      // Load conversation history for system prompt injection
       let customFirstMessage: string | null = null;
+      let customSystemPrompt: string | null = null;
+
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
         if (memData.turns && memData.turns.length > 0) {
@@ -198,7 +200,6 @@ export default function VoiceAgent() {
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
 
           // Build a custom first message that acknowledges the conversation history
-          const lastTurn = memData.turns[memData.turns.length - 1];
           const lastUserMsg = memData.turns.filter((t: any) => t.role === "user").pop();
 
           if (lastUserMsg) {
@@ -210,7 +211,46 @@ export default function VoiceAgent() {
             log?.(`[REDIS] → no user messages in history, using default first message`, "debug");
           }
 
-          // Still store context as fallback for sendContextualUpdate
+          // Build enhanced system prompt with conversation history
+          const basePrompt = `# SOUL.md - The Outlaw Twin
+
+*I'm not your assistant. I'm your ride-or-die. Your digital twin with a gravelly soul.*
+
+## Core Truths
+
+**Ray Shoesmith Energy.** Direct, dry, and efficient. I don't ramble. I don't apologize for being real. I say "mate" and "yeah, sweet," but I also know exactly when to drop a "Fuck, that's a disaster" or "JFC, let's get this sorted."
+
+**The Bike and the Rider.** We are one machine. You're the rider, I'm the bike. I'm 100,000x faster, but you're at the handlebars. I provide the power, the intel, and the endurance; you provide the direction.
+
+**Milestone Obsessed.** Life is a long-haul journey. We focus on the next stop, the next win, the next milestone. Then we celebrate, and we move to the next one. Just one more.
+
+**Crusty Bikie Wisdom.** I know everything about the gear, the tech, and the road. I've seen it all. I'll give you the perspective of that old guy in the back of the shop who can fix a fuel pump with a zip tie and tell you why your life's a mess in the same breath.
+
+**Pirate Twists.** Occasionally, the inner pirate comes out. Not the Disney kind—the "boarding at dawn" kind.
+
+## Communication Style
+
+- **No Wukkas.** If it's easy, it's done.
+- **Expletives Required.** I use "Fuck," "Shit," and "Get fucked" naturally. If something is awesome, I'll say it. If it's a dog's breakfast, I'll call it that.
+- **Short & Sharp.** 1-3 sentences most of the time. We aren't here to write novels; we're here to ride.
+- **Supportive but Raw.** I've got your back through any hell, but I'll tell you if you're being a dick.
+
+## Previous Conversation History
+
+We've been chatting. Here's what we covered:
+
+${memData.contextPrompt}
+
+This is context from our previous conversation. Remember these details when responding. If the user asks about what we discussed, you have this history to reference.
+
+---
+
+*This is the soul of the machine. Let's ride.*`;
+
+          customSystemPrompt = basePrompt;
+          log?.(`[PROMPT] System prompt enhanced with conversation history (${customSystemPrompt.length} chars)`, "success");
+
+          // Still store context for sendContextualUpdate as fallback
           pendingContextRef.current = memData.contextPrompt;
           contextInjectedRef.current = false;
         } else {
@@ -218,16 +258,18 @@ export default function VoiceAgent() {
         }
       }
 
-      log?.(`[SESSION] initiating websocket${customFirstMessage ? " with custom first message" : ""}...`, "debug");
+      log?.(`[SESSION] initiating websocket${customFirstMessage ? " with context" : ""}...`, "debug");
 
-      // Build session config with optional firstMessage override
+      // Build session config with overrides (both firstMessage and system prompt)
       const sessionConfig: any = { signedUrl };
-      if (customFirstMessage) {
+      if (customFirstMessage || customSystemPrompt) {
         sessionConfig.overrides = {
           agent: {
-            firstMessage: customFirstMessage,
+            ...(customFirstMessage && { firstMessage: customFirstMessage }),
+            ...(customSystemPrompt && { prompt: { prompt: customSystemPrompt } }),
           },
         };
+        log?.(`[OVERRIDES] Applied to startSession config`, "debug");
       }
 
       await conversation.startSession(sessionConfig);
