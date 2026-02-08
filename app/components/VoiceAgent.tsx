@@ -446,7 +446,7 @@ This is context from our previous conversation. Remember these details when resp
     };
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (toggle logs), D (doc modal)
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
@@ -470,7 +470,12 @@ This is context from our previous conversation. Remember these details when resp
         (window as any).scrollChatDown?.();
       } else if (e.code === "Tab") {
         e.preventDefault();
-        (window as any).toggleHackerLog?.();
+        // Close doc modal first, then toggle logs
+        if (docModalOpen) {
+          setDocModalOpen(false);
+        } else {
+          (window as any).toggleHackerLog?.();
+        }
       } else if (e.code === "KeyD" && !e.metaKey && !e.ctrlKey) {
         e.preventDefault();
         (window as any).toggleDocModal?.();
@@ -479,7 +484,7 @@ This is context from our previous conversation. Remember these details when resp
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [connectionStatus, handleConnect, handleDisconnect]);
+  }, [connectionStatus, handleConnect, handleDisconnect, docModalOpen]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden">
