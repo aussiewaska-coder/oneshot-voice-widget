@@ -74,8 +74,10 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
       const timestamp = new Date().toLocaleTimeString();
       setLogs((prev) => {
         const newLogs = [...prev.slice(-49), { timestamp, message, type }]; // Keep last 50 logs
-        // Sync to shared state for mobile if available
-        (window as any).setSharedLogs?.(newLogs);
+        // Sync to shared state for mobile if available (defer to break render cycle)
+        setTimeout(() => {
+          (window as any).setSharedLogs?.(newLogs);
+        }, 0);
         return newLogs;
       });
       console.log(`[${timestamp}] ${message}`);
@@ -85,7 +87,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
     if (containerRef.current) {
       containerRef.current.scrollTop = containerRef.current.scrollHeight;
     }
-  }, [logs]);
+  }, []);
 
   // Expose toggleHackerLog function to window for keyboard shortcuts
   useEffect(() => {
