@@ -60,6 +60,14 @@ export default function GlassChat({
     onChatOpenChange?.(!isCollapsed);
   }, [isCollapsed, onChatOpenChange]);
 
+  // Expose openChat function to window for keyboard shortcuts
+  useEffect(() => {
+    (window as any).openChat = () => setIsCollapsed(false);
+    return () => {
+      delete (window as any).openChat;
+    };
+  }, []);
+
   // Initialization phase - show initializing for 1-2 seconds
   useEffect(() => {
     if (isInitializing) {

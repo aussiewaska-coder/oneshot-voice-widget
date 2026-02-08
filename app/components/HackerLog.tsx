@@ -41,6 +41,14 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
     }
   }, [logs]);
 
+  // Expose openHackerLog function to window for keyboard shortcuts
+  useEffect(() => {
+    (window as any).openHackerLog = () => setIsVisible(true);
+    return () => {
+      delete (window as any).openHackerLog;
+    };
+  }, []);
+
   const getTypeColor = (type: string) => {
     switch (type) {
       case "success":

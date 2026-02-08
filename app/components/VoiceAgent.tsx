@@ -312,7 +312,7 @@ This is context from our previous conversation. Remember these details when resp
     messageIdCounter.current = 0;
   }, []);
 
-  // Spacebar to connect/disconnect
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (open logs)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
@@ -322,6 +322,12 @@ This is context from our previous conversation. Remember these details when resp
         } else {
           handleConnect();
         }
+      } else if (e.code === "ArrowLeft") {
+        e.preventDefault();
+        (window as any).openChat?.();
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        (window as any).openHackerLog?.();
       }
     };
 
