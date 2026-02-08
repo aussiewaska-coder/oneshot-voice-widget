@@ -95,9 +95,9 @@ function HealthCard({
     >
       <div className="flex items-center gap-2 mb-2">
         <div className={`w-2 h-2 rounded-full ${colors.dot} ${isActive ? "animate-pulse" : ""}`} />
-        <h3 className={`text-sm font-mono font-bold ${colors.text}`}>{title}</h3>
+        <h3 className={`text-sm font-ubuntu font-bold ${colors.text}`}>{title}</h3>
       </div>
-      <p className={`text-xs font-mono ${colors.text}/70`}>{details}</p>
+      <p className={`text-xs font-ubuntu ${colors.text}/70`}>{details}</p>
     </div>
   );
 }
@@ -175,7 +175,7 @@ export default function HealthDashboard({ health, onConnect, onDisconnect, compa
                 }`}
               />
               <h3
-                className={`font-mono font-bold ${
+                className={`font-ubuntu font-bold ${
                   compact ? "text-xs" : "text-sm"
                 } ${
                   health.connection.status === "healthy"
@@ -189,7 +189,7 @@ export default function HealthDashboard({ health, onConnect, onDisconnect, compa
               </h3>
             </div>
             <p
-              className={`font-mono ${
+              className={`font-ubuntu ${
                 compact ? "text-[10px]" : "text-xs"
               } ${
                 health.connection.status === "healthy"
@@ -230,7 +230,7 @@ export default function HealthDashboard({ health, onConnect, onDisconnect, compa
         />
       </div>
       <div className={`px-3 py-2 rounded border ${health.overall === "healthy" ? "border-green-500/20 bg-green-500/5" : health.overall === "degraded" ? "border-amber-500/20 bg-amber-500/5" : health.overall === "critical" ? "border-red-500/20 bg-red-500/5" : "border-white/10 bg-white/5"}`}>
-        <p className={`text-xs font-mono ${health.overall === "healthy" ? "text-green-400" : health.overall === "degraded" ? "text-amber-400" : health.overall === "critical" ? "text-red-400" : "text-white/40"}`}>
+        <p className={`text-xs font-ubuntu ${health.overall === "healthy" ? "text-green-400" : health.overall === "degraded" ? "text-amber-400" : health.overall === "critical" ? "text-red-400" : "text-white/40"}`}>
           Overall Status: <span className="font-bold">{health.overall.toUpperCase()}</span>
         </p>
       </div>

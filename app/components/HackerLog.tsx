@@ -267,7 +267,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
               <div className="text-[11px] text-green-400 font-bold">
                 {connectionStatus === "connected" ? "● BRAIN ONLINE" : "○ BRAIN OFFLINE"}
               </div>
-              <div className="text-[10px] text-green-400/70 font-mono">
+              <div className="text-[10px] text-green-400/70 font-ubuntu">
                 Model: OpenClaw Brain
               </div>
               <div className="text-[9px] text-green-400/50">
@@ -287,7 +287,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
-                <span className="text-[9px] text-green-400/60 group-hover:text-green-400 font-mono whitespace-nowrap">{selectedVoice}</span>
+                <span className="text-[9px] text-green-400/60 group-hover:text-green-400 font-ubuntu whitespace-nowrap">{selectedVoice}</span>
               </button>
             </div>
           </div>

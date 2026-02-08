@@ -122,8 +122,8 @@ export function ChatContent({
           </div>
         ) : messages.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full gap-4">
-            <p className="text-sm text-white/50">No messages yet</p>
-            <p className="text-xs text-white/30 text-center max-w-xs">
+            <p className="text-base text-white/50 font-ubuntu">No messages yet</p>
+            <p className="text-sm text-white/30 text-center max-w-xs font-ubuntu">
               {status === "connected"
                 ? PROMPT_PHRASES[promptIndex]
                 : "Connect to start a conversation"}
@@ -132,7 +132,7 @@ export function ChatContent({
         ) : (
           messages.map((msg, idx) => (
             <div key={idx} className="flex flex-col gap-1">
-              <span className="text-xs text-white/40 font-mono">
+              <span className="text-xs text-white/40 font-ubuntu font-bold">
                 {msg.role === "user" ? "You" : "Agent"}
               </span>
               {msg.role === "agent" ? (
@@ -157,7 +157,7 @@ export function ChatContent({
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
             placeholder={PROMPT_PHRASES[promptIndex]}
-            className="flex-1 bg-white/5 text-white placeholder-white/30 px-3 py-2 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-cyan-400/50 transition-all"
+            className="flex-1 bg-white/5 text-white placeholder-white/30 px-4 py-3 rounded-lg text-sm font-ubuntu focus:outline-none focus:ring-1 focus:ring-cyan-400/50 transition-all min-h-12"
             disabled={status !== "connected"}
           />
 
@@ -165,7 +165,7 @@ export function ChatContent({
           <button
             onClick={handleSend}
             disabled={!inputValue.trim() || status !== "connected"}
-            className="p-2 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all min-w-10 min-h-10 flex items-center justify-center"
+            className="p-2 rounded-lg bg-white/10 text-white/60 hover:bg-white/20 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all min-w-12 min-h-12 flex items-center justify-center"
             aria-label="Send message"
           >
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -177,7 +177,7 @@ export function ChatContent({
           {/* Mic Toggle */}
           <button
             onClick={onToggleMic}
-            className={`p-2 rounded-lg transition-all min-w-10 min-h-10 flex items-center justify-center ${
+            className={`p-2 rounded-lg transition-all min-w-12 min-h-12 flex items-center justify-center ${
               micMuted
                 ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
                 : "bg-white/10 text-white/60 hover:bg-white/20"

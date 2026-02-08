@@ -49,7 +49,7 @@ body {
   overflow: hidden;
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: var(--font-ubuntu), var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
 /* ─── Chat glass panel ─── */

@@ -151,7 +151,7 @@ export default function DocModal({ isOpen, onClose, health, onConnect, onDisconn
                     <button
                       key={level}
                       onClick={() => setComplexityLevel(level)}
-                      className={`px-3 py-1 rounded text-xs font-mono transition-all ${
+                      className={`px-3 py-1 rounded text-xs font-ubuntu transition-all ${
                         complexityLevel === level
                           ? "bg-cyan-500/30 border border-cyan-400 text-cyan-300 font-semibold"
                           : "bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80"
