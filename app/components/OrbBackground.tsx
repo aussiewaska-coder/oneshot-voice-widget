@@ -37,8 +37,8 @@ export default function OrbBackground({
       const beta = event.beta || 0;
       const gamma = event.gamma || 0;
 
-      const y = Math.max(-15, Math.min(15, beta / 10));
-      const x = Math.max(-15, Math.min(15, gamma / 6));
+      const y = Math.max(-30, Math.min(30, beta / 6));
+      const x = Math.max(-30, Math.min(30, gamma / 3));
 
       setOffsetX(x);
       setOffsetY(y);
@@ -49,11 +49,11 @@ export default function OrbBackground({
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
 
-      const x = ((event.clientX - centerX) / centerX) * 15;
-      const y = ((event.clientY - centerY) / centerY) * 15;
+      const x = ((event.clientX - centerX) / centerX) * 30;
+      const y = ((event.clientY - centerY) / centerY) * 30;
 
-      setOffsetX(Math.max(-15, Math.min(15, x)));
-      setOffsetY(Math.max(-15, Math.min(15, y)));
+      setOffsetX(Math.max(-30, Math.min(30, x)));
+      setOffsetY(Math.max(-30, Math.min(30, y)));
     };
 
     // Request permission for iOS 13+
@@ -95,7 +95,7 @@ export default function OrbBackground({
         className={styles.blobs}
         style={{
           transform: `translate(${offsetX}%, ${offsetY}%) scale(${scale})`,
-          transition: "transform 150ms cubic-bezier(0.23, 1, 0.320, 1)",
+          transition: "transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1)",
         }}
       >
         <svg viewBox="0 0 1200 1200">
