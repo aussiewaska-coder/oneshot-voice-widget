@@ -1,4 +1,3 @@
-import { kv } from "@vercel/kv";
 import fs from "fs";
 import path from "path";
 
@@ -16,6 +15,17 @@ export interface ConversationMemory {
 
 const MAX_TURNS = 50;
 const MEMORY_KEY = "conversation:memory";
+
+// In-memory fallback (for Vercel serverless where /tmp is ephemeral)
+let memoryCache: ConversationMemory | null = null;
+
+let kv: any = null;
+try {
+  kv = require("@vercel/kv").kv;
+  console.log("[MEMORY-INIT] Vercel KV available");
+} catch (err) {
+  console.log("[MEMORY-INIT] Vercel KV not available, using in-memory cache + fs fallback");
+}
 
 // Local fallback for dev (when KV is not available)
 function getMemoryPath(): string {
@@ -38,47 +48,82 @@ function readMemoryLocal(): ConversationMemory {
   const filePath = getMemoryPath();
   try {
     const raw = fs.readFileSync(filePath, "utf-8");
-    return JSON.parse(raw) as ConversationMemory;
-  } catch {
+    const parsed = JSON.parse(raw) as ConversationMemory;
+    console.log(`[FS-LOCAL] ✓ READ from ${filePath} | ${parsed.turns.length} turns`);
+    return parsed;
+  } catch (err) {
+    console.log(`[FS-LOCAL] read failed, using empty state`);
     return { turns: [], totalTurns: 0, trimmedAt: null };
   }
 }
 
 function writeMemoryLocal(memory: ConversationMemory): void {
   const filePath = getMemoryPath();
-  fs.writeFileSync(filePath, JSON.stringify(memory, null, 2), "utf-8");
+  try {
+    fs.writeFileSync(filePath, JSON.stringify(memory, null, 2), "utf-8");
+    console.log(`[FS-LOCAL] ✓ WROTE to ${filePath} | ${memory.turns.length} turns`);
+  } catch (err) {
+    console.log(`[FS-LOCAL] write failed:`, err);
+  }
 }
 
 async function readMemoryRedis(): Promise<ConversationMemory> {
-  try {
-    console.log("[REDIS-KV] querying key:", MEMORY_KEY);
-    const stored = await kv.get<ConversationMemory>(MEMORY_KEY);
-    if (stored) {
-      console.log(`[REDIS-KV] ✓ HIT | turns: ${stored.turns.length} | lifetime: ${stored.totalTurns}`);
-      return stored;
-    } else {
-      console.log(`[REDIS-KV] MISS | empty or null`);
-      return { turns: [], totalTurns: 0, trimmedAt: null };
-    }
-  } catch (err) {
-    // KV not available, fallback to local
-    console.log("[REDIS-KV] ✗ ERROR:", err instanceof Error ? err.message : String(err));
-    console.log("[REDIS-KV] falling back to local fs");
-    return readMemoryLocal();
+  // If we have cached memory, use it (warm instance)
+  if (memoryCache) {
+    console.log(`[MEMORY-CACHE] ✓ HIT | ${memoryCache.turns.length} turns in memory`);
+    return memoryCache;
   }
+
+  // Try Redis
+  if (kv) {
+    try {
+      console.log(`[REDIS-KV] querying key: ${MEMORY_KEY}`);
+      const stored = await Promise.race([
+        kv.get(MEMORY_KEY) as Promise<ConversationMemory | null>,
+        new Promise<never>((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+      ]);
+      if (stored) {
+        console.log(`[REDIS-KV] ✓ HIT | ${stored.turns.length} turns | lifetime: ${stored.totalTurns}`);
+        memoryCache = stored; // Cache it
+        return stored;
+      } else {
+        console.log(`[REDIS-KV] MISS | empty result`);
+      }
+    } catch (err) {
+      console.log(`[REDIS-KV] ✗ ERROR: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
+  // Fallback to local fs
+  console.log(`[MEMORY] falling back to local fs`);
+  const local = readMemoryLocal();
+  memoryCache = local; // Cache it
+  return local;
 }
 
 async function writeMemoryRedis(memory: ConversationMemory): Promise<void> {
-  try {
-    console.log(`[REDIS-KV] WRITE key: ${MEMORY_KEY} | turns: ${memory.turns.length} | lifetime: ${memory.totalTurns}`);
-    await kv.set(MEMORY_KEY, memory);
-    console.log(`[REDIS-KV] ✓ COMMITTED to redis`);
-  } catch (err) {
-    // KV not available, fallback to local
-    console.log("[REDIS-KV] ✗ WRITE ERROR:", err instanceof Error ? err.message : String(err));
-    console.log("[REDIS-KV] falling back to local fs");
-    writeMemoryLocal(memory);
+  // Always cache in memory (hot path)
+  memoryCache = memory;
+  console.log(`[MEMORY-CACHE] updated in-memory cache | ${memory.turns.length} turns`);
+
+  // Try Redis
+  if (kv) {
+    try {
+      console.log(`[REDIS-KV] WRITE key: ${MEMORY_KEY} | ${memory.turns.length} turns`);
+      const result = await Promise.race([
+        kv.set(MEMORY_KEY, memory),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 5000)),
+      ]);
+      console.log(`[REDIS-KV] ✓ COMMITTED | result: ${JSON.stringify(result)}`);
+      return;
+    } catch (err) {
+      console.log(`[REDIS-KV] ✗ ERROR: ${err instanceof Error ? err.message : String(err)}`);
+    }
   }
+
+  // Fallback to local fs
+  console.log(`[MEMORY] falling back to local fs write`);
+  writeMemoryLocal(memory);
 }
 
 /**
@@ -87,7 +132,7 @@ async function writeMemoryRedis(memory: ConversationMemory): Promise<void> {
 export async function saveTurn(role: "user" | "agent", text: string): Promise<ConversationMemory> {
   console.log(`[MEMORY] saveTurn(${role}, "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}")`);
   const memory = await readMemoryRedis();
-  console.log(`[MEMORY] read existing: ${memory.turns.length} turns`);
+  console.log(`[MEMORY] read: ${memory.turns.length} turns`);
 
   memory.turns.push({
     role,
@@ -95,12 +140,12 @@ export async function saveTurn(role: "user" | "agent", text: string): Promise<Co
     ts: new Date().toISOString(),
   });
   memory.totalTurns++;
-  console.log(`[MEMORY] appended turn | now: ${memory.turns.length} stored, ${memory.totalTurns} lifetime`);
+  console.log(`[MEMORY] appended | now: ${memory.turns.length} stored, ${memory.totalTurns} lifetime`);
 
   // Trim oldest turns if over limit
   if (memory.turns.length > MAX_TURNS) {
     const overflow = memory.turns.length - MAX_TURNS;
-    console.log(`[MEMORY] ⚠ TRIMMING ${overflow} old turns (keeping max ${MAX_TURNS})`);
+    console.log(`[MEMORY] ⚠ TRIMMING ${overflow} turns (keeping max ${MAX_TURNS})`);
     memory.turns = memory.turns.slice(overflow);
     memory.trimmedAt = new Date().toISOString();
   }
