@@ -47,6 +47,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
   const [selectedVoice, setSelectedVoice] = useState<string>(getRandomVoice());
+  const [fontSizeMultiplier, setFontSizeMultiplier] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -129,11 +130,12 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
       {/* Log panel */}
       {isVisible && (
-        <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] z-40 ${
+        <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-ubuntu text-[11px] z-40 ${
           isClosing ? "animate-[genieOut_0.7s_ease-in-out_forwards]" : "animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
         }`} style={{
           transformOrigin: "left center",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.3) inset",
+          fontSize: `${11 * fontSizeMultiplier}px`,
         }}>
           {/* Top visualization section - Brain is thinking when online */}
           <style>{`
@@ -331,6 +333,35 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
             <div className="relative flex items-center gap-2 z-10">
               <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
+
+              {/* Font size controls for accessibility */}
+              <div className="flex items-center gap-0.5 border-l border-green-500/20 pl-2">
+                <button
+                  onClick={() => setFontSizeMultiplier(Math.max(0.8, fontSizeMultiplier - 0.1))}
+                  className="text-green-400/40 hover:text-green-400 transition-colors p-1"
+                  aria-label="Decrease font size"
+                  title="Decrease font size (Accessibility)"
+                  disabled={fontSizeMultiplier <= 0.8}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+                <span className="text-green-400/60 text-[8px] px-1 select-none">{Math.round(fontSizeMultiplier * 100)}%</span>
+                <button
+                  onClick={() => setFontSizeMultiplier(Math.min(1.4, fontSizeMultiplier + 0.1))}
+                  className="text-green-400/40 hover:text-green-400 transition-colors p-1"
+                  aria-label="Increase font size"
+                  title="Increase font size (Accessibility)"
+                  disabled={fontSizeMultiplier >= 1.4}
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="12" y1="5" x2="12" y2="19" />
+                    <line x1="5" y1="12" x2="19" y2="12" />
+                  </svg>
+                </button>
+              </div>
+
               <button
                 onClick={handleClose}
                 className="text-green-400/40 hover:text-green-400 transition-colors p-1"
