@@ -190,12 +190,27 @@ export default function VoiceAgent() {
       log?.(`[SESSION] obtained signed url`, "success");
 
       // Load conversation history for context injection
+      let customFirstMessage: string | null = null;
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
-        if (memData.contextPrompt) {
-          log?.(`[REDIS] ✓ LOADED ${memData.turns?.length || 0} turns for injection`, "success");
-          log?.(`[REDIS] context size: ${memData.contextPrompt.length} chars`, "debug");
+        if (memData.turns && memData.turns.length > 0) {
+          log?.(`[REDIS] ✓ LOADED ${memData.turns.length} turns for override`, "success");
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
+
+          // Build a custom first message that acknowledges the conversation history
+          const lastTurn = memData.turns[memData.turns.length - 1];
+          const lastUserMsg = memData.turns.filter((t: any) => t.role === "user").pop();
+
+          if (lastUserMsg) {
+            const snippet = lastUserMsg.text.substring(0, 50);
+            customFirstMessage = `Gday, back for more? Last time you asked about: "${snippet}${lastUserMsg.text.length > 50 ? "..." : ""}" — let's pick it up from there.`;
+            log?.(`[OVERRIDE] Custom first message generated`, "success");
+            log?.(`  "${customFirstMessage}"`, "info");
+          } else {
+            log?.(`[REDIS] → no user messages in history, using default first message`, "debug");
+          }
+
+          // Still store context as fallback for sendContextualUpdate
           pendingContextRef.current = memData.contextPrompt;
           contextInjectedRef.current = false;
         } else {
@@ -203,8 +218,19 @@ export default function VoiceAgent() {
         }
       }
 
-      log?.(`[SESSION] initiating websocket...`, "debug");
-      await conversation.startSession({ signedUrl });
+      log?.(`[SESSION] initiating websocket${customFirstMessage ? " with custom first message" : ""}...`, "debug");
+
+      // Build session config with optional first_message override
+      const sessionConfig: any = { signedUrl };
+      if (customFirstMessage) {
+        sessionConfig.overrides = {
+          agent: {
+            first_message: customFirstMessage,
+          },
+        };
+      }
+
+      await conversation.startSession(sessionConfig);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
