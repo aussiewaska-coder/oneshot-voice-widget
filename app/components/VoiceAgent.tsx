@@ -11,14 +11,20 @@ import { ChatMessage } from "./MessageBubble";
 // Fire-and-forget save — never blocks the conversation
 function persistTurn(role: "user" | "agent", text: string) {
   const log = (window as any).hackerLog;
-  log?.(`[MEMORY] saving ${role} turn: "${text.substring(0, 40)}${text.length > 40 ? "..." : ""}"`, "debug");
+  log?.(`[REDIS] WRITE ${role.toUpperCase()} → "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}"`, "debug");
   fetch("/api/memory", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ role, text }),
   })
-    .then(() => log?.(`[MEMORY] turn saved ✓`, "success"))
-    .catch((err) => log?.(`[MEMORY] save failed: ${err.message}`, "error"));
+    .then((res) => {
+      if (res.ok) {
+        log?.(`[REDIS] ✓ COMMITTED to persistent store`, "success");
+      } else {
+        log?.(`[REDIS] ✗ HTTP ${res.status}`, "error");
+      }
+    })
+    .catch((err) => log?.(`[REDIS] ✗ WRITE FAILED: ${err.message}`, "error"));
 }
 
 export default function VoiceAgent() {
@@ -47,12 +53,15 @@ export default function VoiceAgent() {
   // Load previous conversation into the chat panel on mount
   useEffect(() => {
     const log = (window as any).hackerLog;
-    log?.(`[INIT] loading conversation history...`, "info");
+    log?.(`[REDIS] QUERYING persistent conversation history...`, "debug");
     fetch("/api/memory")
       .then((r) => r.json())
       .then((data) => {
         if (data.turns && data.turns.length > 0) {
-          log?.(`[INIT] loaded ${data.turns.length} turns from redis`, "success");
+          log?.(`[REDIS] ✓ LOADED ${data.turns.length} turns (${data.totalTurns} total lifetime)`, "success");
+          data.turns.forEach((t: any, i: number) => {
+            log?.(`  [${i + 1}] ${t.role.toUpperCase()}: "${t.text.substring(0, 50)}${t.text.length > 50 ? "..." : ""}"`, "info");
+          });
           const loaded: ChatMessage[] = data.turns.map(
             (t: { role: string; text: string }, i: number) => ({
               id: `history-${i}`,
@@ -64,10 +73,10 @@ export default function VoiceAgent() {
           setMessages(loaded);
           messageIdCounter.current = loaded.length;
         } else {
-          log?.(`[INIT] no history found`, "debug");
+          log?.(`[REDIS] → empty (first conversation)`, "debug");
         }
       })
-      .catch((err) => log?.(`[INIT] failed to load history: ${err.message}`, "error"));
+      .catch((err) => log?.(`[REDIS] ✗ LOAD FAILED: ${err.message}`, "error"));
   }, []);
 
   const conversation = useConversation({
@@ -171,7 +180,12 @@ export default function VoiceAgent() {
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
         if (memData.contextPrompt) {
-          log?.(`[OVERRIDE] injecting ${memData.turns?.length || 0} turns as context`, "success");
+          log?.(`[REDIS] ✓ BUILDING prompt override with ${memData.turns?.length || 0} conversation turns`, "success");
+          log?.(`[REDIS] context size: ${memData.contextPrompt.length} chars`, "debug");
+          log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
+          if (memData.trimmedAt) {
+            log?.(`[REDIS] last trimmed: ${memData.trimmedAt}`, "debug");
+          }
           overrides = {
             agent: {
               prompt: {
@@ -180,12 +194,13 @@ export default function VoiceAgent() {
             },
           };
         } else {
-          log?.(`[OVERRIDE] no context to inject (new conversation)`, "debug");
+          log?.(`[REDIS] → no prior context (fresh session)`, "debug");
         }
       }
 
-      log?.(`[SESSION] starting websocket...`, "debug");
+      log?.(`[SESSION] initiating websocket with redis context...`, "debug");
       await conversation.startSession({ signedUrl, overrides });
+      log?.(`[REDIS] ✓ CONTEXT INJECTED into agent prompt`, "success");
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
