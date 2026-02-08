@@ -113,9 +113,9 @@ export default function OrbBackground({
   };
 
   // Mobile-specific styling
-  const containerClass = isMobile ? "absolute top-0 left-0 w-full h-[33vh] flex items-center justify-center" : `${styles.container}`;
+  const containerClass = isMobile ? "absolute top-0 left-0 w-full h-screen flex items-center justify-center" : `${styles.container}`;
   const blurIntensity = lowPerformance ? 20 : isMobile ? 30 : 60;
-  const mobileScale = isMobile ? 1.3 : 1; // Zoom in 30% on mobile
+  const mobileScale = isMobile ? 2.0 : 1; // 2x bigger on mobile
 
   return (
     <div
