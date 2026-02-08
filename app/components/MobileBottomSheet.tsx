@@ -142,17 +142,18 @@ export function MobileBottomSheet({
   return (
     <>
       <div
-        className={`fixed bottom-0 left-0 right-0 z-45 flex flex-col transition-all duration-400 ease-out ${getSheetHeight()} rounded-t-2xl overflow-hidden chat-glass`}
+        className={`fixed bottom-0 left-0 right-0 z-45 flex flex-col transition-all duration-400 ease-out ${getSheetHeight()} rounded-t-3xl overflow-hidden chat-glass`}
         style={{
           backdropFilter: lowPerformance ? "blur(20px)" : "blur(30px)",
           boxShadow:
             "0 -4px 24px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08) inset",
+          paddingBottom: "max(1rem, env(safe-area-inset-bottom))",
         }}
       >
       {/* Drag Handle + Status Bar */}
       <div
         ref={dragHandleRef}
-        className="flex flex-col items-center gap-3 px-4 py-3 border-b border-white/8 touch-none select-none"
+        className="flex flex-col items-center gap-3 px-4 md:px-6 py-3 border-b border-white/8 touch-none select-none"
         style={{ touchAction: "none" }}
       >
         {/* Drag Handle Visual */}

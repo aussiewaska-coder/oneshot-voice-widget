@@ -64,7 +64,7 @@ export default function DocModal({ isOpen, onClose, health, onConnect, onDisconn
 
       {/* Modal */}
       <div
-        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[90vw] max-w-[900px] max-h-[80vh] bg-gradient-to-br from-blue-950/10 to-purple-950/10 border border-white/12 rounded-xl overflow-hidden flex flex-col z-50 ${
+        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[calc(100vw-2rem)] md:w-[90vw] max-w-[900px] max-h-[80vh] md:max-h-[85vh] bg-gradient-to-br from-blue-950/10 to-purple-950/10 border border-white/12 rounded-xl overflow-hidden flex flex-col z-50 ${
           isClosing ? "animate-[genieOut_0.7s_ease-in-out_forwards]" : "animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
         }`}
         style={{
@@ -77,7 +77,7 @@ export default function DocModal({ isOpen, onClose, health, onConnect, onDisconn
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
+        <div className="px-4 md:px-4 md:px-6 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <span className="text-2xl">📚</span>
             <h1 className="text-lg font-bold text-white">TugBot Documentation</h1>
@@ -97,7 +97,7 @@ export default function DocModal({ isOpen, onClose, health, onConnect, onDisconn
         {/* Content */}
         <div className="flex-1 overflow-hidden flex flex-col">
           {/* Health Dashboard */}
-          <div className="px-6 py-4 border-b border-white/10 bg-white/[0.02]">
+          <div className="px-4 md:px-6 py-4 border-b border-white/10 bg-white/[0.02]">
             <h2 className="text-sm font-semibold text-white/80 mb-3">System Health</h2>
             <HealthDashboard health={health} onConnect={onConnect} onDisconnect={onDisconnect} />
           </div>
