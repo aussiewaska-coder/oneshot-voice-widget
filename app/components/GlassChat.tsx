@@ -78,13 +78,13 @@ export default function GlassChat({
 
   return (
     <div
-      className={`absolute left-5 top-5 z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu transition-all duration-500 ease-out ${
+      className={`absolute right-5 top-5 z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu transition-all duration-500 ease-out ${
         isCollapsed
           ? "w-auto h-auto"
           : "bottom-5 w-[420px] max-w-[calc(100vw-5rem)]"
       }`}
       style={{
-        transformOrigin: "top left",
+        transformOrigin: "top right",
       }}
     >
       {/* ── Header / Control Bar ── */}
