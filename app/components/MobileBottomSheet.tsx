@@ -140,14 +140,15 @@ export function MobileBottomSheet({
   ];
 
   return (
-    <div
-      className={`fixed bottom-0 left-0 right-0 z-45 flex flex-col transition-all duration-400 ease-out ${getSheetHeight()} rounded-t-2xl overflow-hidden chat-glass`}
-      style={{
-        backdropFilter: lowPerformance ? "blur(20px)" : "blur(30px)",
-        boxShadow:
-          "0 -4px 24px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08) inset",
-      }}
-    >
+    <>
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-45 flex flex-col transition-all duration-400 ease-out ${getSheetHeight()} rounded-t-2xl overflow-hidden chat-glass`}
+        style={{
+          backdropFilter: lowPerformance ? "blur(20px)" : "blur(30px)",
+          boxShadow:
+            "0 -4px 24px rgba(0, 0, 0, 0.24), 0 0 0 1px rgba(255, 255, 255, 0.08) inset",
+        }}
+      >
       {/* Drag Handle + Status Bar */}
       <div
         ref={dragHandleRef}
@@ -243,5 +244,23 @@ export function MobileBottomSheet({
         </div>
       )}
     </div>
+
+      {/* Fullscreen Button - Fixed corner */}
+      {sheetState !== "full" && (
+        <button
+          onClick={() => {
+            haptics.double();
+            setSheetState("full");
+          }}
+          className="fixed bottom-20 right-4 z-46 p-2 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-500/40 text-cyan-300 transition-all min-w-10 min-h-10 flex items-center justify-center"
+          title="Expand to fullscreen"
+          aria-label="Expand bottom sheet to fullscreen"
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+        </button>
+      )}
+    </>
   );
 }
