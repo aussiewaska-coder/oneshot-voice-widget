@@ -361,7 +361,7 @@ This is context from our previous conversation. Remember these details when resp
         onClearMessages={handleClearMessages}
         onChatOpenChange={setIsChatOpen}
       />
-      <HackerLog palette={palette} onPaletteChange={setPalette} />
+      <HackerLog palette={palette} onPaletteChange={setPalette} connectionStatus={connectionStatus} />
     </div>
   );
 }

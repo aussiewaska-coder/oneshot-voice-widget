@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useCallback } from "react";
+import { Matrix, loader } from "@/components/ui/matrix";
 
 export interface LogEntry {
   timestamp: string;
@@ -20,9 +21,10 @@ const PALETTE_COLORS = [
 interface HackerLogProps {
   palette?: number;
   onPaletteChange?: (palette: number) => void;
+  connectionStatus?: "connected" | "disconnected" | "connecting";
 }
 
-export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogProps) {
+export default function HackerLog({ palette = 5, onPaletteChange, connectionStatus = "disconnected" }: HackerLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -84,7 +86,7 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
         <div className="absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
           transformOrigin: "left center",
         }}>
-          {/* Top visualization section - Thinking animation */}
+          {/* Top visualization section - Brain is thinking when online */}
           <style>{`
             @keyframes thinkingRing {
               0% {
@@ -106,32 +108,72 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
                 border-radius: 50%;
               }
             }
+            @keyframes matrixFall {
+              0% { transform: translateY(-100%); opacity: 1; }
+              100% { transform: translateY(100%); opacity: 0; }
+            }
           `}</style>
-          <div className="px-4 py-5 border-b border-green-500/20 bg-black/70 flex items-center justify-center">
-            <div className="relative w-12 h-12">
-              {/* Outer rotating ring */}
-              <div
-                className="absolute inset-0 border-2 border-transparent border-t-cyan-400 border-r-blue-400 rounded-full"
-                style={{
-                  animation: "spin 3s cubic-bezier(0.6, 0.2, 0.2, 0.6) infinite",
-                  boxShadow: "0 0 15px rgba(34, 211, 238, 0.6), inset 0 0 15px rgba(59, 130, 246, 0.2)",
-                }}
-              />
-              {/* Inner morphing shape */}
-              <div
-                className="absolute inset-2 border-2 border-green-400 bg-gradient-to-br from-green-500/10 to-cyan-500/5"
-                style={{
-                  animation: "thinkingRing 4s ease-in-out infinite",
-                  boxShadow: "0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(16, 185, 129, 0.2)",
-                }}
-              />
-              {/* Pulse center dot */}
-              <div className="absolute inset-4 bg-gradient-to-b from-cyan-400 to-green-400 rounded-full"
-                style={{
-                  animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
-                  boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)",
-                }}
-              />
+          <div className="px-4 py-5 border-b border-green-500/20 bg-black/70 flex items-center justify-between">
+            {/* Matrix rain background + ring */}
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              {/* Matrix rain effect */}
+              <div className="absolute inset-0 overflow-hidden rounded-lg opacity-30">
+                {connectionStatus === "connected" && (
+                  <Matrix rows={4} cols={4} frames={loader} fps={12} loop size={6} gap={1} />
+                )}
+              </div>
+
+              {/* Thinking ring - only animates when connected */}
+              {connectionStatus === "connected" && (
+                <div className="relative w-12 h-12">
+                  {/* Outer rotating ring */}
+                  <div
+                    className="absolute inset-0 border-2 border-transparent border-t-cyan-400 border-r-blue-400 rounded-full"
+                    style={{
+                      animation: "spin 3s cubic-bezier(0.6, 0.2, 0.2, 0.6) infinite",
+                      boxShadow: "0 0 15px rgba(34, 211, 238, 0.6), inset 0 0 15px rgba(59, 130, 246, 0.2)",
+                    }}
+                  />
+                  {/* Inner morphing shape */}
+                  <div
+                    className="absolute inset-2 border-2 border-green-400 bg-gradient-to-br from-green-500/10 to-cyan-500/5"
+                    style={{
+                      animation: "thinkingRing 4s ease-in-out infinite",
+                      boxShadow: "0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(16, 185, 129, 0.2)",
+                    }}
+                  />
+                  {/* Pulse center dot */}
+                  <div className="absolute inset-4 bg-gradient-to-b from-cyan-400 to-green-400 rounded-full"
+                    style={{
+                      animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+                      boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)",
+                    }}
+                  />
+                </div>
+              )}
+
+              {/* Offline indicator */}
+              {connectionStatus !== "connected" && (
+                <div className="flex flex-col items-center justify-center gap-1">
+                  <div className="w-8 h-8 border-2 border-red-500/50 rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-red-500 rounded-full" />
+                  </div>
+                  <span className="text-[8px] text-red-400/60">OFFLINE</span>
+                </div>
+              )}
+            </div>
+
+            {/* Model and status info */}
+            <div className="flex-1 ml-4 space-y-1">
+              <div className="text-[9px] text-green-400 font-bold">
+                {connectionStatus === "connected" ? "● BRAIN ONLINE" : "○ BRAIN OFFLINE"}
+              </div>
+              <div className="text-[8px] text-green-400/60">
+                Model: ElevenLabs Convai
+              </div>
+              <div className="text-[8px] text-green-400/50">
+                Status: {connectionStatus === "connecting" ? "Initializing..." : connectionStatus === "connected" ? "Active" : "Standby"}
+              </div>
             </div>
           </div>
 
