@@ -19,21 +19,28 @@ export default function VoiceAgent() {
 
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
+  // Synchronous flag the RAF loop can check without waiting for React state
+  const isConnectedRef = useRef(false);
+
+  const stopPolling = useCallback(() => {
+    if (animFrameRef.current) {
+      cancelAnimationFrame(animFrameRef.current);
+      animFrameRef.current = null;
+    }
+    setInputVolume(0);
+    setOutputVolume(0);
+  }, []);
 
   const conversation = useConversation({
     micMuted,
     onConnect: () => {
+      isConnectedRef.current = true;
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
+      isConnectedRef.current = false;
+      stopPolling();
       setConnectionStatus("disconnected");
-      // Stop volume polling
-      if (animFrameRef.current) {
-        cancelAnimationFrame(animFrameRef.current);
-        animFrameRef.current = null;
-      }
-      setInputVolume(0);
-      setOutputVolume(0);
     },
     onMessage: (message) => {
       const id = `msg-${messageIdCounter.current++}`;
@@ -45,14 +52,24 @@ export default function VoiceAgent() {
     },
     onError: (error) => {
       console.error("Conversation error:", error);
+      isConnectedRef.current = false;
+      stopPolling();
       setConnectionStatus("disconnected");
     },
   });
 
-  // Volume polling via requestAnimationFrame
+  // Volume polling via requestAnimationFrame — guards with synchronous ref
   const pollVolume = useCallback(() => {
-    setInputVolume(conversation.getInputVolume());
-    setOutputVolume(conversation.getOutputVolume());
+    if (!isConnectedRef.current) {
+      animFrameRef.current = null;
+      return;
+    }
+    try {
+      setInputVolume(conversation.getInputVolume());
+      setOutputVolume(conversation.getOutputVolume());
+    } catch {
+      // WebSocket may have closed between the ref check and the call
+    }
     animFrameRef.current = requestAnimationFrame(pollVolume);
   }, [conversation]);
 
@@ -64,6 +81,7 @@ export default function VoiceAgent() {
     return () => {
       if (animFrameRef.current) {
         cancelAnimationFrame(animFrameRef.current);
+        animFrameRef.current = null;
       }
     };
   }, [connectionStatus, pollVolume]);
@@ -91,13 +109,16 @@ export default function VoiceAgent() {
   }, [conversation]);
 
   const handleDisconnect = useCallback(async () => {
+    // Stop polling immediately — don't wait for onDisconnect callback
+    isConnectedRef.current = false;
+    stopPolling();
     await conversation.endSession();
-  }, [conversation]);
+  }, [conversation, stopPolling]);
 
   const handleSendMessage = useCallback(
     (text: string) => {
+      if (!isConnectedRef.current) return;
       conversation.sendUserMessage(text);
-      // Add user message to chat immediately
       const id = `msg-${messageIdCounter.current++}`;
       setMessages((prev) => [
         ...prev,
@@ -108,7 +129,12 @@ export default function VoiceAgent() {
   );
 
   const handleSendActivity = useCallback(() => {
-    conversation.sendUserActivity();
+    if (!isConnectedRef.current) return;
+    try {
+      conversation.sendUserActivity();
+    } catch {
+      // Swallow if WS already closed
+    }
   }, [conversation]);
 
   const handleToggleMic = useCallback(() => {
