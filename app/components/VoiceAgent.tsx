@@ -165,16 +165,19 @@ export default function VoiceAgent() {
   useEffect(() => {
     const log = (window as any).hackerLog;
     if (connectionStatus === "connected") {
-      log?.(`[HEARTBEAT] ♥ activated (1min interval)`, "success");
-      heartbeatRef.current = setInterval(() => {
-        try {
-          // Send a keep-alive context update to prevent timeout
-          conversation.sendContextualUpdate(".");
-          log?.(`[HEARTBEAT] ♥ pulse sent (keep-alive)`, "success");
-        } catch (err) {
-          log?.(`[HEARTBEAT] ✗ pulse failed: ${err}`, "error");
-        }
-      }, 60000); // 60 seconds = 1 minute
+      // Only activate if not already active
+      if (!heartbeatRef.current) {
+        log?.(`[HEARTBEAT] ♥ activated (1min interval)`, "success");
+        heartbeatRef.current = setInterval(() => {
+          try {
+            // Send a keep-alive context update to prevent timeout
+            conversation.sendContextualUpdate(".");
+            log?.(`[HEARTBEAT] ♥ pulse sent (keep-alive)`, "success");
+          } catch (err) {
+            log?.(`[HEARTBEAT] ✗ pulse failed: ${err}`, "error");
+          }
+        }, 60000); // 60 seconds = 1 minute
+      }
     } else {
       if (heartbeatRef.current) {
         clearInterval(heartbeatRef.current);
