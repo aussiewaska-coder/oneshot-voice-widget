@@ -10,7 +10,7 @@ export interface LogEntry {
 
 export default function HackerLog() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -45,7 +45,7 @@ export default function HackerLog() {
       {/* Toggle button */}
       <button
         onClick={() => setIsVisible(!isVisible)}
-        className="absolute bottom-5 left-5 w-10 h-10 rounded bg-green-500/10 border border-green-500/40 hover:border-green-500/80 hover:bg-green-500/20 transition-all flex items-center justify-center text-green-400 hover:text-green-300"
+        className="absolute bottom-5 left-5 w-10 h-10 rounded bg-green-500/10 border border-green-500/40 hover:border-green-500/80 hover:bg-green-500/20 transition-all flex items-center justify-center text-green-400 hover:text-green-300 z-40 cursor-pointer"
         aria-label="Toggle debug logs"
         title="Toggle debug logs"
       >
@@ -57,7 +57,7 @@ export default function HackerLog() {
 
       {/* Log panel */}
       {isVisible && (
-        <div className="absolute bottom-5 left-16 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]" style={{
+        <div className="absolute bottom-5 left-16 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
           transformOrigin: "left center",
         }}>
           {/* Header */}
