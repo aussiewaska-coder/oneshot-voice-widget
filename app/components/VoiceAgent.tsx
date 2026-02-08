@@ -63,6 +63,23 @@ export default function VoiceAgent() {
     log?.(`[INIT] starting with empty chat display`, "debug");
   }, []);
 
+  // Spacebar to connect/disconnect
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
+        e.preventDefault();
+        if (connectionStatus === "connected") {
+          handleDisconnect();
+        } else {
+          handleConnect();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [connectionStatus, handleConnect, handleDisconnect]);
+
   const conversation = useConversation({
     micMuted,
     onConnect: () => {
