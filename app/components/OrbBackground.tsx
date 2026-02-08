@@ -37,23 +37,23 @@ export default function OrbBackground({
       const beta = event.beta || 0;
       const gamma = event.gamma || 0;
 
-      const y = Math.max(-30, Math.min(30, beta / 6));
-      const x = Math.max(-30, Math.min(30, gamma / 3));
+      const y = Math.max(-12, Math.min(12, beta / 20));
+      const x = Math.max(-12, Math.min(12, gamma / 10));
 
       setOffsetX(x);
       setOffsetY(y);
     };
 
     const handleMouseMove = (event: MouseEvent) => {
-      // Calculate position relative to center of screen
+      // Calculate position relative to center of screen - subtle, decorative movement
       const centerX = window.innerWidth / 2;
       const centerY = window.innerHeight / 2;
 
-      const x = ((event.clientX - centerX) / centerX) * 30;
-      const y = ((event.clientY - centerY) / centerY) * 30;
+      const x = ((event.clientX - centerX) / centerX) * 8 + (Math.random() - 0.5) * 3;
+      const y = ((event.clientY - centerY) / centerY) * 8 + (Math.random() - 0.5) * 3;
 
-      setOffsetX(Math.max(-30, Math.min(30, x)));
-      setOffsetY(Math.max(-30, Math.min(30, y)));
+      setOffsetX(Math.max(-12, Math.min(12, x)));
+      setOffsetY(Math.max(-12, Math.min(12, y)));
     };
 
     // Request permission for iOS 13+
@@ -95,7 +95,7 @@ export default function OrbBackground({
         className={styles.blobs}
         style={{
           transform: `translate(${offsetX}%, ${offsetY}%) scale(${scale})`,
-          transition: "transform 800ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+          transition: "transform 2000ms cubic-bezier(0.25, 0.46, 0.45, 0.94)",
         }}
       >
         <svg viewBox="0 0 1200 1200">
