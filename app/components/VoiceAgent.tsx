@@ -8,6 +8,7 @@ import PaletteSwitcher from "./PaletteSwitcher";
 import HackerLog from "./HackerLog";
 import Logo from "./Logo";
 import FadeIn from "./FadeIn";
+import CapabilitiesList from "./CapabilitiesList";
 import { ChatMessage } from "./MessageBubble";
 
 // Fire-and-forget save — never blocks the conversation
@@ -357,6 +358,7 @@ This is context from our previous conversation. Remember these details when resp
       />
       <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
       <Logo />
+      <CapabilitiesList />
       <GlassChat
         messages={messages}
         status={connectionStatus}
