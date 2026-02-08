@@ -85,6 +85,9 @@ export default function GlassChat({
       }`}
       style={{
         transformOrigin: "top right",
+        boxShadow: isCollapsed
+          ? "0 0 40px -10px rgba(0, 162, 199, 0.6), 0 0 80px -20px rgba(0, 74, 173, 0.3)"
+          : "0 0 0 1px rgba(255, 255, 255, 0.08) inset, 0 0 60px -15px rgba(100, 150, 255, 0.25), 0 25px 50px -12px rgba(0, 0, 0, 0.4), 0 0 120px -30px rgba(120, 100, 255, 0.15)"
       }}
     >
       {/* ── Header / Control Bar ── */}
