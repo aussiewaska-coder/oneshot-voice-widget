@@ -44,6 +44,7 @@ export default function GlassChat({
   const [inputValue, setInputValue] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
   const [isCollapsed, setIsCollapsed] = useState(true);
+  const [isInitializing, setIsInitializing] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -52,15 +53,25 @@ export default function GlassChat({
     }
   }, [messages]);
 
+  // Initialization phase - show initializing for 1-2 seconds
+  useEffect(() => {
+    if (isInitializing) {
+      const timer = setTimeout(() => {
+        setIsInitializing(false);
+      }, 1500); // 1.5 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [isInitializing]);
+
   // Rotate prompt phrases when connected with no messages
   useEffect(() => {
-    if (status === "connected" && messages.length === 0) {
+    if (status === "connected" && messages.length === 0 && !isInitializing) {
       const interval = setInterval(() => {
         setPromptIndex((prev) => (prev + 1) % PROMPT_PHRASES.length);
       }, 4000); // Change phrase every 4 seconds
       return () => clearInterval(interval);
     }
-  }, [status, messages.length]);
+  }, [status, messages.length, isInitializing]);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -209,15 +220,34 @@ export default function GlassChat({
         {messages.length === 0 ? (
           <div className="flex items-center justify-center h-full">
             {status === "connected" ? (
-              <ShimmeringText
-                text={PROMPT_PHRASES[promptIndex]}
-                className="text-xl font-light"
-                color="rgba(255,255,255,0.25)"
-                shimmerColor="rgba(255,255,255,0.6)"
-                duration={2.5}
-                spread={1.5}
-              />
-            ) : (
+              <div className={`transition-opacity duration-1000 ${
+                isInitializing ? "opacity-100" : "opacity-0"
+              }`}>
+                <ShimmeringText
+                  text="...initializing..."
+                  className="text-xl font-light"
+                  color="rgba(255,255,255,0.25)"
+                  shimmerColor="rgba(255,255,255,0.6)"
+                  duration={2.5}
+                  spread={1.5}
+                />
+              </div>
+            ) : null}
+            {status === "connected" && !isInitializing && (
+              <div className={`transition-opacity duration-1000 ${
+                isInitializing ? "opacity-0" : "opacity-100"
+              }`}>
+                <ShimmeringText
+                  text={PROMPT_PHRASES[promptIndex]}
+                  className="text-xl font-light"
+                  color="rgba(255,255,255,0.25)"
+                  shimmerColor="rgba(255,255,255,0.6)"
+                  duration={2.5}
+                  spread={1.5}
+                />
+              </div>
+            )}
+            {status !== "connected" && (
               <p className="text-[13px] text-white/20 font-light">
                 Press Connect to begin
               </p>
