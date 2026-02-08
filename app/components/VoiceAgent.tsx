@@ -6,6 +6,7 @@ import OrbBackground from "./OrbBackground";
 import GlassChat from "./GlassChat";
 import PaletteSwitcher from "./PaletteSwitcher";
 import HackerLog from "./HackerLog";
+import Logo from "./Logo";
 import { ChatMessage } from "./MessageBubble";
 
 // Fire-and-forget save — never blocks the conversation
@@ -319,6 +320,7 @@ This is context from our previous conversation. Remember these details when resp
         isConnected={connectionStatus === "connected"}
       />
       <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
+      <Logo />
       <GlassChat
         messages={messages}
         status={connectionStatus}
