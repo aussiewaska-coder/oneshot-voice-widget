@@ -1,12 +1,9 @@
 "use client";
 
 const palettes = [
-  { id: 1, bg0: "#101030", bg1: "#050515" },
-  { id: 2, bg0: "#545454", bg1: "#150513" },
-  { id: 3, bg0: "#300030", bg1: "#000000" },
-  { id: 4, bg0: "#ffffff", bg1: "#d3f7ff" },
-  { id: 5, bg0: "#968e85", bg1: "#8cc084" },
-  { id: 6, bg0: "#ffffff", bg1: "#4e598c" },
+  { id: 1, name: "Blue Standard", bg0: "#101030", bg1: "#050515" },
+  { id: 2, name: "Soul Red Evil", bg0: "#4a1a1a", bg1: "#0a0a0a" },
+  { id: 3, name: "Hacker Green", bg0: "#0d2b0d", bg1: "#000a00" },
 ];
 
 interface PaletteSwitcherProps {
@@ -32,7 +29,8 @@ export default function PaletteSwitcher({
           style={{
             background: `radial-gradient(${p.bg0}, ${p.bg1})`,
           }}
-          aria-label={`Palette ${p.id}`}
+          title={p.name}
+          aria-label={p.name}
         />
       ))}
     </div>

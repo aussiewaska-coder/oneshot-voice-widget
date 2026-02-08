@@ -28,7 +28,9 @@
   transition: background 500ms ease;
 }
 
-/* Palettes */
+/* Palettes: Blue Standard, Soul Red Evil, Hacker Green */
+
+/* Palette 1: Blue Standard (default) */
 .palette1 {
   --bg-0: #101030;
   --bg-1: #050515;
@@ -38,49 +40,24 @@
   --blob-4: #050515;
 }
 
+/* Palette 2: Soul Red Evil */
 .palette2 {
-  --bg-0: #545454;
-  --bg-1: #150513;
-  --blob-1: #ff3838;
-  --blob-2: #ff9d7c;
-  --blob-3: #ffdda0;
-  --blob-4: #fff6ea;
+  --bg-0: #4a1a1a;
+  --bg-1: #0a0a0a;
+  --blob-1: #ff1744;
+  --blob-2: #d32f2f;
+  --blob-3: #ff5252;
+  --blob-4: #1a0000;
 }
 
+/* Palette 3: Hacker Green */
 .palette3 {
-  --bg-0: #300030;
-  --bg-1: #000000;
-  --blob-1: #291528;
-  --blob-2: #3a3e3b;
-  --blob-3: #9e829c;
-  --blob-4: #f0eff4;
-}
-
-.palette4 {
-  --bg-0: #ffffff;
-  --bg-1: #d3f7ff;
-  --blob-1: #bb74ff;
-  --blob-2: #7c7dff;
-  --blob-3: #a0f8ff;
-  --blob-4: #ffffff;
-}
-
-.palette5 {
-  --bg-0: #968e85;
-  --bg-1: #8cc084;
-  --blob-1: #c1d7ae;
-  --blob-2: #9eff72;
-  --blob-3: #ffcab1;
-  --blob-4: #ecdcb0;
-}
-
-.palette6 {
-  --bg-0: #ffffff;
-  --bg-1: #4e598c;
-  --blob-1: #ff8c42;
-  --blob-2: #fcaf58;
-  --blob-3: #f9c784;
-  --blob-4: #ffffff;
+  --bg-0: #0d2b0d;
+  --bg-1: #000a00;
+  --blob-1: #00ff41;
+  --blob-2: #00cc33;
+  --blob-3: #33ff00;
+  --blob-4: #001a00;
 }
 
 /* Blobs container */
