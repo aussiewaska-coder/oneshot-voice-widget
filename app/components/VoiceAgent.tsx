@@ -86,7 +86,7 @@ export default function VoiceAgent() {
         overrides: {
           agent: {
             prompt: { prompt: "You are Ray Shoesmith. Direct, dry, and efficient. Speak like a regular Aussie bloke. Keep it short. Most importantly: RESPOND TO EVERY USER INPUT." },
-            first_message: "Yeah, it's Ray. I'm on the bike and ready. What've you got for me?",
+            firstMessage: "Yeah, it's Ray. I'm on the bike and ready. What've you got for me?",
           }
         }
       });
