@@ -153,7 +153,7 @@ export function MobileBottomSheet({
       {/* Drag Handle + Status Bar */}
       <div
         ref={dragHandleRef}
-        className="flex flex-col items-center gap-3 px-4 md:px-6 py-3 border-b border-white/8 touch-none select-none"
+        className="flex flex-col items-center gap-4 px-4 md:px-6 py-5 border-b border-white/8 touch-none select-none"
         style={{ touchAction: "none" }}
       >
         {/* Drag Handle Visual */}
@@ -192,8 +192,9 @@ export function MobileBottomSheet({
               className={`text-xs font-bold px-4 py-1.5 rounded transition-all min-w-14 flex-shrink-0 ${
                 status === "connected"
                   ? "bg-red-500/30 text-red-200 hover:bg-red-500/40"
-                  : "bg-white/15 text-white/90 hover:bg-white/25"
+                  : "bg-white/15 text-white/90 hover:bg-white/25 shadow-[0_0_12px_rgba(236,72,153,0.6)]"
               } disabled:opacity-30 disabled:cursor-not-allowed`}
+              style={status !== "connected" ? { boxShadow: "0 0 16px rgba(236, 72, 153, 0.7)" } : undefined}
             >
               {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
             </button>
