@@ -56,7 +56,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
     closeTimeoutRef.current = setTimeout(() => {
       setIsVisible(false);
       setIsClosing(false);
-    }, 700); // Match the animation duration
+    }, 600); // Match the animation duration
   };
 
   // Cleanup timeout on unmount
@@ -131,7 +131,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
       {/* Log panel */}
       {isVisible && (
         <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-ubuntu text-[11px] z-40 ${
-          isClosing ? "animate-[genieOut_0.7s_ease-in-out_forwards]" : "animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
+          isClosing ? "animate-[genieOut_0.6s_ease-out_forwards]" : "animate-[genieIn_0.8s_ease-out_forwards]"
         }`} style={{
           transformOrigin: "left center",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.3) inset",

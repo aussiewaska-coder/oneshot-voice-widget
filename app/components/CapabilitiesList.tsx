@@ -4,30 +4,6 @@ import { useState } from "react";
 
 const CAPABILITIES = [
   {
-    name: "Operator Lookup",
-    simple: "Find operator information and contacts",
-    middle: "Search and retrieve real-time operator details, including contact information, availability status, and operational capabilities.",
-    complex: "const operatorLookup = { query: 'operator', fields: ['contact', 'availability', 'capabilities'], cache: true, timeout: 5000 };",
-  },
-  {
-    name: "Tug Services",
-    simple: "Browse tug services and schedules",
-    middle: "Access comprehensive tug service options including vessel scheduling, fleet information, and service availability across all ports.",
-    complex: "const tugServices = { endpoints: ['schedules', 'fleet', 'availability'], auth: 'oauth2', rateLimit: '1000/hour', cache: 'redis' };",
-  },
-  {
-    name: "Tug Manuals",
-    simple: "View technical documentation and guides",
-    middle: "Browse extensive technical and operational manuals, specifications, and guides for equipment and procedures.",
-    complex: "const manuals = { storage: 's3', format: ['pdf', 'html'], versions: 'tracked', search: 'fulltext', metadata: 'indexed' };",
-  },
-  {
-    name: "Tug1300 Integration",
-    simple: "Connect to Tug1300 systems directly",
-    middle: "Seamless integration with Tug1300 systems for real-time data access, system status, and operational commands.",
-    complex: "const tug1300 = { protocol: 'rest', secure: 'tls1.3', polling: '30s', events: 'websocket', failover: 'automatic' };",
-  },
-  {
     name: "SMS Integration",
     simple: "Send and receive text messages",
     middle: "Full SMS communication through the bot interface, enabling text-based interactions, alerts, and notifications.",
