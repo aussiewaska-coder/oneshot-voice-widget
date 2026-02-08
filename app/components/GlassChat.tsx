@@ -30,12 +30,21 @@ export default function GlassChat({
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const activityTimeoutRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    return () => {
+      if (activityTimeoutRef.current !== null) {
+        clearTimeout(activityTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -48,6 +57,15 @@ export default function GlassChat({
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const throttledActivity = () => {
+    if (activityTimeoutRef.current === null) {
+      onSendActivity();
+      activityTimeoutRef.current = window.setTimeout(() => {
+        activityTimeoutRef.current = null;
+      }, 500);
     }
   };
 
@@ -208,7 +226,7 @@ export default function GlassChat({
           value={inputValue}
           onChange={(e) => {
             setInputValue(e.target.value);
-            if (status === "connected") onSendActivity();
+            if (status === "connected") throttledActivity();
           }}
           onKeyDown={handleKeyDown}
           placeholder={status === "connected" ? "Type a message..." : "Connect first..."}
