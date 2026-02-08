@@ -29,21 +29,31 @@ export default function OrbBackground({
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
 
-  // Device orientation detection
+  // Device orientation (mobile) or mouse movement (desktop) detection
   useEffect(() => {
     const handleOrientation = (event: DeviceOrientationEvent) => {
       // beta: tilt forward/backward (-180 to 180, 0 is upright)
       // gamma: tilt left/right (-90 to 90, 0 is upright)
-      const beta = event.beta || 0; // -180 to 180
-      const gamma = event.gamma || 0; // -90 to 90
+      const beta = event.beta || 0;
+      const gamma = event.gamma || 0;
 
-      // Convert to offset percentages (more pronounced movement)
-      // Clamp values to prevent extreme movement
-      const y = Math.max(-15, Math.min(15, beta / 10)); // -15% to 15%
-      const x = Math.max(-15, Math.min(15, gamma / 6)); // -15% to 15%
+      const y = Math.max(-15, Math.min(15, beta / 10));
+      const x = Math.max(-15, Math.min(15, gamma / 6));
 
       setOffsetX(x);
       setOffsetY(y);
+    };
+
+    const handleMouseMove = (event: MouseEvent) => {
+      // Calculate position relative to center of screen
+      const centerX = window.innerWidth / 2;
+      const centerY = window.innerHeight / 2;
+
+      const x = ((event.clientX - centerX) / centerX) * 15;
+      const y = ((event.clientY - centerY) / centerY) * 15;
+
+      setOffsetX(Math.max(-15, Math.min(15, x)));
+      setOffsetY(Math.max(-15, Math.min(15, y)));
     };
 
     // Request permission for iOS 13+
@@ -53,16 +63,23 @@ export default function OrbBackground({
         .then((permissionState: string) => {
           if (permissionState === "granted") {
             window.addEventListener("deviceorientation", handleOrientation);
+          } else {
+            // Fallback to mouse on denied permission
+            window.addEventListener("mousemove", handleMouseMove);
           }
         })
-        .catch(console.error);
+        .catch(() => {
+          // Fallback to mouse on error
+          window.addEventListener("mousemove", handleMouseMove);
+        });
     } else {
-      // Non-iOS or older iOS
-      window.addEventListener("deviceorientation", handleOrientation);
+      // Desktop or non-iOS: use mouse movement
+      window.addEventListener("mousemove", handleMouseMove);
     }
 
     return () => {
       window.removeEventListener("deviceorientation", handleOrientation);
+      window.removeEventListener("mousemove", handleMouseMove);
     };
   }, []);
 
