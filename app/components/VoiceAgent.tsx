@@ -196,9 +196,6 @@ export default function VoiceAgent() {
     };
   }, [connectionStatus, pollVolume]);
 
-  // Heartbeat disabled - was causing WebSocket disconnects
-  // TODO: Implement using requestIdleCallback or other non-effect-based approach
-
   const handleConnect = useCallback(async () => {
     const log = (window as any).hackerLog;
     try {
@@ -230,6 +227,7 @@ export default function VoiceAgent() {
 
       // Load conversation history for system prompt injection
       let customSystemPrompt: string | null = null;
+      let overrides: Record<string, any> | undefined;
 
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
@@ -288,6 +286,12 @@ This is context from our previous conversation. Remember these details when resp
           // Still store context for sendContextualUpdate as fallback
           pendingContextRef.current = memData.contextPrompt;
           contextInjectedRef.current = false;
+          
+          overrides = {
+            agent: {
+              prompt: { prompt: customSystemPrompt },
+            },
+          };
         } else {
           log?.(`[REDIS] → no prior context (fresh session)`, "debug");
         }
@@ -306,20 +310,9 @@ This is context from our previous conversation. Remember these details when resp
         setMicPermission("prompt");
       }
 
-      log?.(`[SESSION] initiating websocket${customSystemPrompt ? " with context" : ""}...`, "debug");
+      log?.(`[SESSION] initiating websocket${overrides ? " with context" : ""}...`, "debug");
 
-      // Build session config with overrides (system prompt only, no firstMessage for silent start)
-      const sessionConfig: any = { signedUrl };
-      if (customSystemPrompt) {
-        sessionConfig.overrides = {
-          agent: {
-            prompt: { prompt: customSystemPrompt },
-          },
-        };
-        log?.(`[OVERRIDES] Applied system prompt to startSession config (silent start)`, "debug");
-      }
-
-      await conversation.startSession(sessionConfig);
+      await conversation.startSession({ signedUrl, overrides });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
@@ -473,8 +466,6 @@ This is context from our previous conversation. Remember these details when resp
 
   // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (close docs first, then logs), D (doc modal), Command (hold to mute, double-tap to toggle)
   useEffect(() => {
-    const log = (window as any).hackerLog;
-
     const handleKeyDown = (e: KeyboardEvent) => {
       // Command key (Meta) - hold to mute, double-tap to toggle
       if (e.code === "MetaLeft" || e.code === "MetaRight") {
@@ -487,14 +478,14 @@ This is context from our previous conversation. Remember these details when resp
           // Toggle mute
           setMicMuted((prev) => !prev);
           commandMutedRef.current = false;
-          log?.(`[MIC] toggled mute to ${!micMuted}`, "info");
+          (window as any).hackerLog?.(`[MIC] toggled mute to ${!micMuted}`, "info");
         } else {
           // Single press - mute while held
           commandPressedRef.current = true;
           if (!commandMutedRef.current) {
             commandMutedRef.current = true;
             setMicMuted(true);
-            log?.(`[MIC] muted (hold Command)`, "debug");
+            (window as any).hackerLog?.(`[MIC] muted (hold Command)`, "debug");
           }
         }
 
@@ -546,8 +537,7 @@ This is context from our previous conversation. Remember these details when resp
             // Give some time buffer to detect double-tap
             setMicMuted(false);
             commandMutedRef.current = false;
-            const log = (window as any).hackerLog;
-            log?.(`[MIC] unmuted (released Command)`, "debug");
+            (window as any).hackerLog?.(`[MIC] unmuted (released Command)`, "debug");
           }
         }
       }
