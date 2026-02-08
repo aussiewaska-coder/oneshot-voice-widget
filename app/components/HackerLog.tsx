@@ -10,7 +10,7 @@ export interface LogEntry {
 
 export default function HackerLog() {
   const [logs, setLogs] = useState<LogEntry[]>([]);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
