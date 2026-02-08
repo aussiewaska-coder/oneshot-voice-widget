@@ -60,11 +60,28 @@ export default function GlassChat({
     onChatOpenChange?.(!isCollapsed);
   }, [isCollapsed, onChatOpenChange]);
 
-  // Expose openChat function to window for keyboard shortcuts
+  // Expose chat control functions to window for keyboard shortcuts
   useEffect(() => {
     (window as any).openChat = () => setIsCollapsed(false);
+    (window as any).closeChat = () => setIsCollapsed(true);
+    (window as any).scrollChatUp = () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = Math.max(0, scrollRef.current.scrollTop - 60);
+      }
+    };
+    (window as any).scrollChatDown = () => {
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = Math.min(
+          scrollRef.current.scrollHeight,
+          scrollRef.current.scrollTop + 60
+        );
+      }
+    };
     return () => {
       delete (window as any).openChat;
+      delete (window as any).closeChat;
+      delete (window as any).scrollChatUp;
+      delete (window as any).scrollChatDown;
     };
   }, []);
 

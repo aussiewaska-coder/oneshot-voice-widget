@@ -312,7 +312,7 @@ This is context from our previous conversation. Remember these details when resp
     messageIdCounter.current = 0;
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight/Tab (toggle logs)
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (close chat), Up/Down (scroll), Tab (toggle logs)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
@@ -325,7 +325,16 @@ This is context from our previous conversation. Remember these details when resp
       } else if (e.code === "ArrowLeft") {
         e.preventDefault();
         (window as any).openChat?.();
-      } else if (e.code === "ArrowRight" || e.code === "Tab") {
+      } else if (e.code === "ArrowRight") {
+        e.preventDefault();
+        (window as any).closeChat?.();
+      } else if (e.code === "ArrowUp") {
+        e.preventDefault();
+        (window as any).scrollChatUp?.();
+      } else if (e.code === "ArrowDown") {
+        e.preventDefault();
+        (window as any).scrollChatDown?.();
+      } else if (e.code === "Tab") {
         e.preventDefault();
         (window as any).toggleHackerLog?.();
       }
