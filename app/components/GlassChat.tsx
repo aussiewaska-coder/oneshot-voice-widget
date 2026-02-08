@@ -43,6 +43,7 @@ export default function GlassChat({
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
+  const [isCollapsed, setIsCollapsed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -76,40 +77,71 @@ export default function GlassChat({
   };
 
   return (
-    <div className="absolute right-5 top-5 bottom-5 w-[420px] max-w-[calc(100vw-5rem)] z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu">
+    <div
+      className={`absolute right-5 top-5 z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu transition-all duration-500 ease-out ${
+        isCollapsed
+          ? "w-[80px] h-[80px]"
+          : "bottom-5 w-[420px] max-w-[calc(100vw-5rem)]"
+      }`}
+      style={{
+        transformOrigin: "top right",
+      }}
+    >
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-3">
-          <span className="relative flex h-2.5 w-2.5">
-            {status === "connected" && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+        {!isCollapsed && (
+          <div className="flex items-center gap-3">
+            <span className="relative flex h-2.5 w-2.5">
+              {status === "connected" && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+              )}
+              {status === "connecting" && (
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+              )}
+              <span
+                className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
+                  status === "connected"
+                    ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                    : status === "connecting"
+                    ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
+                    : "bg-white/20"
+                }`}
+              />
+            </span>
+            <span className="text-[11px] font-medium tracking-[0.15em] uppercase text-white/50">
+              {status === "connected"
+                ? isSpeaking
+                  ? "Speaking"
+                  : "Listening"
+                : status === "connecting"
+                ? "Connecting"
+                : "Offline"}
+            </span>
+          </div>
+        )}
+
+        {/* Collapse button */}
+        <button
+          onClick={() => setIsCollapsed(!isCollapsed)}
+          className="p-1 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all"
+          aria-label={isCollapsed ? "Expand" : "Collapse"}
+          title={isCollapsed ? "Expand chat" : "Collapse chat"}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            {isCollapsed ? (
+              <>
+                <path d="M8 9l4-4 4 4M8 15l4 4 4-4" />
+              </>
+            ) : (
+              <>
+                <path d="M4 12h16M4 12l4-4m-4 4l4 4" />
+              </>
             )}
-            {status === "connecting" && (
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-            )}
-            <span
-              className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
-                status === "connected"
-                  ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
-                  : status === "connecting"
-                  ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
-                  : "bg-white/20"
-              }`}
-            />
-          </span>
-          <span className="text-[11px] font-medium tracking-[0.15em] uppercase text-white/50">
-            {status === "connected"
-              ? isSpeaking
-                ? "Speaking"
-                : "Listening"
-              : status === "connecting"
-              ? "Connecting"
-              : "Offline"}
-          </span>
-        </div>
+          </svg>
+        </button>
 
         {/* Speaking indicator bars */}
-        {status === "connected" && isSpeaking && (
+        {!isCollapsed && status === "connected" && isSpeaking && (
           <div className="flex gap-[3px] items-center h-4">
             {[0, 1, 2, 3, 4].map((i) => (
               <div
@@ -124,9 +156,11 @@ export default function GlassChat({
         )}
       </div>
 
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+      {!isCollapsed && (
+        <>
+          <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-      {/* ── Messages ── */}
+          {/* ── Messages ── */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-5 py-4 space-y-4 scrollbar-thin"
@@ -271,29 +305,31 @@ export default function GlassChat({
         </div>
       )}
 
-      <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
+          <div className="mx-4 h-px bg-gradient-to-r from-transparent via-white/[0.08] to-transparent" />
 
-      {/* ── Bottom action button ── */}
-      <div className="px-4 py-4 flex justify-center">
-        <button
-          onClick={status === "connected" ? onDisconnect : onConnect}
-          disabled={status === "connecting"}
-          className={`relative px-8 py-3.5 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
-            status === "connected"
-              ? "bg-white/[0.04] text-white/30 hover:bg-red-500/15 hover:text-red-300"
-              : "bg-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white/90"
-          } disabled:opacity-30 disabled:cursor-not-allowed`}
-        >
-          {status !== "connected" && status !== "connecting" && (
-            <span className="absolute inset-0 rounded-xl border border-white/[0.08] hover:border-white/[0.15] transition-colors" />
-          )}
-          {status === "connected"
-            ? "End"
-            : status === "connecting"
-            ? "..."
-            : "Connect"}
-        </button>
-      </div>
+          {/* ── Bottom action button ── */}
+          <div className="px-4 py-4 flex justify-center">
+            <button
+              onClick={status === "connected" ? onDisconnect : onConnect}
+              disabled={status === "connecting"}
+              className={`relative px-8 py-3.5 rounded-xl text-[11px] font-semibold tracking-[0.12em] uppercase transition-all duration-300 overflow-hidden ${
+                status === "connected"
+                  ? "bg-white/[0.04] text-white/30 hover:bg-red-500/15 hover:text-red-300"
+                  : "bg-white/[0.08] text-white/60 hover:bg-white/[0.12] hover:text-white/90"
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+            >
+              {status !== "connected" && status !== "connecting" && (
+                <span className="absolute inset-0 rounded-xl border border-white/[0.08] hover:border-white/[0.15] transition-colors" />
+              )}
+              {status === "connected"
+                ? "End"
+                : status === "connecting"
+                ? "..."
+                : "Connect"}
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
