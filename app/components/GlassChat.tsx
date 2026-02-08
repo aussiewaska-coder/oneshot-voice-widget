@@ -17,6 +17,19 @@ interface GlassChatProps {
   onClearMessages: () => void;
 }
 
+const PROMPT_PHRASES = [
+  "What's on your mind?",
+  "Say something...",
+  "I'm listening...",
+  "Go on, I'm all ears...",
+  "Lay it on me...",
+  "Talk to me...",
+  "What've you got?",
+  "Speak up...",
+  "I'm ready...",
+  "Your move...",
+];
+
 export default function GlassChat({
   messages,
   status,
@@ -29,6 +42,7 @@ export default function GlassChat({
   onClearMessages,
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
+  const [promptIndex, setPromptIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -36,6 +50,16 @@ export default function GlassChat({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  // Rotate prompt phrases when connected with no messages
+  useEffect(() => {
+    if (status === "connected" && messages.length === 0) {
+      const interval = setInterval(() => {
+        setPromptIndex((prev) => (prev + 1) % PROMPT_PHRASES.length);
+      }, 4000); // Change phrase every 4 seconds
+      return () => clearInterval(interval);
+    }
+  }, [status, messages.length]);
 
   const handleSend = () => {
     const trimmed = inputValue.trim();
@@ -111,12 +135,12 @@ export default function GlassChat({
           <div className="flex items-center justify-center h-full">
             {status === "connected" ? (
               <ShimmeringText
-                text="Waiting for conversation..."
-                className="text-sm font-light"
-                color="rgba(255,255,255,0.2)"
-                shimmerColor="rgba(255,255,255,0.5)"
-                duration={3}
-                spread={1}
+                text={PROMPT_PHRASES[promptIndex]}
+                className="text-xl font-light"
+                color="rgba(255,255,255,0.25)"
+                shimmerColor="rgba(255,255,255,0.6)"
+                duration={2.5}
+                spread={1.5}
               />
             ) : (
               <p className="text-[13px] text-white/20 font-light">
