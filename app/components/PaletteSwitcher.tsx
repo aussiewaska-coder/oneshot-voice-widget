@@ -4,6 +4,7 @@ const palettes = [
   { id: 1, name: "Blue Standard", bg0: "#101030", bg1: "#050515" },
   { id: 2, name: "Soul Red Evil", bg0: "#4a1a1a", bg1: "#0a0a0a" },
   { id: 3, name: "Hacker Green", bg0: "#0d2b0d", bg1: "#000a00" },
+  { id: 4, name: "Moody Dark", bg0: "#2a1a3a", bg1: "#0f0510" },
 ];
 
 interface PaletteSwitcherProps {

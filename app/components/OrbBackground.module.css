@@ -60,6 +60,16 @@
   --blob-4: #001a00;
 }
 
+/* Palette 4: Moody Dark (Mauve, Purple, Burgundy, Soul Red) */
+.palette4 {
+  --bg-0: #2a1a3a;
+  --bg-1: #0f0510;
+  --blob-1: #8b4a8f;
+  --blob-2: #6b3d7a;
+  --blob-3: #a83d5c;
+  --blob-4: #4a2a3a;
+}
+
 /* Blobs container */
 .blobs {
   width: min(60vw, 60vh);
