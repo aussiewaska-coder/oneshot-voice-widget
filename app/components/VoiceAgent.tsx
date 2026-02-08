@@ -334,7 +334,7 @@ This is context from our previous conversation. Remember these details when resp
         onToggleMic={handleToggleMic}
         onClearMessages={handleClearMessages}
       />
-      <HackerLog />
+      <HackerLog palette={palette} onPaletteChange={setPalette} />
     </div>
   );
 }

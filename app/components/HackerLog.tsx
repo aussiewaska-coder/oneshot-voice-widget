@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useCallback } from "react";
 
 export interface LogEntry {
   timestamp: string;
@@ -8,7 +9,20 @@ export interface LogEntry {
   type: "info" | "success" | "error" | "debug";
 }
 
-export default function HackerLog() {
+const PALETTE_COLORS = [
+  { id: 1, bg0: "#101030", bg1: "#050515" },
+  { id: 2, bg0: "#4a1a1a", bg1: "#0a0a0a" },
+  { id: 3, bg0: "#0d2b0d", bg1: "#000a00" },
+  { id: 4, bg0: "#2a1a3a", bg1: "#0f0510" },
+  { id: 5, bg0: "#004aad", bg1: "#051c2c" },
+];
+
+interface HackerLogProps {
+  palette?: number;
+  onPaletteChange?: (palette: number) => void;
+}
+
+export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogProps) {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -64,7 +78,26 @@ export default function HackerLog() {
         }}>
           {/* Header */}
           <div className="px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between">
-            <span className="text-green-400 font-bold">HACKER_LOG.SYS</span>
+            <span className="text-green-400 font-bold text-[10px]">HACKER_LOG.SYS</span>
+
+            {/* Palette selector */}
+            <div className="flex items-center gap-1">
+              {PALETTE_COLORS.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => onPaletteChange?.(p.id)}
+                  className={`w-2 h-2 rounded-full transition-all ${
+                    palette === p.id ? "ring-1 ring-white" : ""
+                  }`}
+                  style={{
+                    background: `linear-gradient(135deg, ${p.bg0}, ${p.bg1})`,
+                  }}
+                  title={`Palette ${p.id}`}
+                  aria-label={`Palette ${p.id}`}
+                />
+              ))}
+            </div>
+
             <div className="flex items-center gap-2">
               <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
               <button
