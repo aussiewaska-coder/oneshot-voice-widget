@@ -40,16 +40,16 @@ export default function CapabilitiesList() {
   const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
   return (
-    <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-8">
+    <div className="absolute top-40 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-8">
       <style>{`
-        @keyframes rollIn {
+        @keyframes easeUp {
           from {
             opacity: 0;
-            transform: translateX(-20px);
+            transform: translateY(20px);
           }
           to {
             opacity: 1;
-            transform: translateX(0);
+            transform: translateY(0);
           }
         }
 
@@ -74,7 +74,7 @@ export default function CapabilitiesList() {
         }
 
         .capability-item {
-          animation: rollIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          animation: easeUp 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
           opacity: 0;
         }
 
@@ -85,9 +85,32 @@ export default function CapabilitiesList() {
         .capability-item.hovered {
           animation: glow 1.5s ease-in-out infinite;
         }
+
+        .tooltip-scroll {
+          max-height: 120px;
+          overflow-y: auto;
+          overflow-x: hidden;
+        }
+
+        .tooltip-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+
+        .tooltip-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+
+        .tooltip-scroll::-webkit-scrollbar-thumb {
+          background: rgba(100, 200, 255, 0.3);
+          border-radius: 2px;
+        }
+
+        .tooltip-scroll::-webkit-scrollbar-thumb:hover {
+          background: rgba(100, 200, 255, 0.5);
+        }
       `}</style>
 
-      <div className="space-y-4">
+      <div className="space-y-3">
         {CAPABILITIES.map((capability, index) => (
           <div
             key={index}
@@ -109,7 +132,7 @@ export default function CapabilitiesList() {
               />
 
               {/* Capability text */}
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p
                   className={`font-ubuntu text-base font-light transition-all duration-300 ${
                     hoveredIndex === index
@@ -120,12 +143,14 @@ export default function CapabilitiesList() {
                   {capability.name}
                 </p>
 
-                {/* Tooltip on click */}
+                {/* Tooltip on hover with scroll */}
                 {expandedIndex === index && (
                   <div className="mt-2 p-3 bg-black/60 border border-cyan-400/30 rounded-lg animate-in fade-in duration-200">
-                    <p className="font-ubuntu text-xs text-cyan-300/80 leading-relaxed">
-                      {capability.tooltip}
-                    </p>
+                    <div className="tooltip-scroll">
+                      <p className="font-ubuntu text-xs text-cyan-300/80 leading-relaxed pr-2">
+                        {capability.tooltip}
+                      </p>
+                    </div>
                   </div>
                 )}
               </div>
