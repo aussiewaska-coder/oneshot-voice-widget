@@ -219,7 +219,6 @@ export default function VoiceAgent() {
       log?.(`[SESSION] obtained signed url`, "success");
 
       // Load conversation history for system prompt injection
-      let customFirstMessage: string | null = null;
       let customSystemPrompt: string | null = null;
 
       if (memRes && memRes.ok) {
@@ -228,30 +227,9 @@ export default function VoiceAgent() {
           log?.(`[REDIS] ✓ LOADED ${memData.turns.length} turns for override`, "success");
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
 
-          // Build a custom first message that acknowledges the conversation history
-          // Use agent's last response as context (more meaningful than user's last message)
-          const lastAgentMsg = memData.turns.filter((t: any) => t.role === "agent").pop();
-          const lastUserMsg = memData.turns.filter((t: any) => t.role === "user").pop();
-
-          if (lastAgentMsg) {
-            // Extract first meaningful phrase from agent's last response (first sentence or ~60 chars)
-            const agentText = lastAgentMsg.text;
-            const firstSentence = agentText.split(/[.!?]+/)[0] || agentText.substring(0, 60);
-            const snippet = firstSentence.substring(0, 60);
-            customFirstMessage = `Alright mate, we were just talking about ${snippet.toLowerCase()}${snippet.length === 60 ? "..." : ""} Where were we?`;
-            log?.(`[OVERRIDE] Custom first message generated from agent context`, "success");
-            log?.(`  "${customFirstMessage}"`, "info");
-          } else if (lastUserMsg) {
-            // Fallback to user message if no agent message
-            const snippet = lastUserMsg.text.substring(0, 50);
-            customFirstMessage = `Gday, back for more? We were discussing "${snippet}${lastUserMsg.text.length > 50 ? "..." : ""}"`;
-            log?.(`[OVERRIDE] Custom first message generated from user context`, "success");
-            log?.(`  "${customFirstMessage}"`, "info");
-          } else {
-            log?.(`[REDIS] → no messages in history, using default first message`, "debug");
-          }
-
           // Build enhanced system prompt with conversation history
+          // Memory is injected silently — the agent knows the history but
+          // doesn't bring it up. The user initiates any callback to prior topics.
           const basePrompt = `# SOUL.md - The Outlaw Twin
 
 *I'm not your assistant. I'm your ride-or-die. Your digital twin with a gravelly soul.*
@@ -277,11 +255,9 @@ export default function VoiceAgent() {
 
 ## Previous Conversation History
 
-We've been chatting. Here's what we covered:
+You have memory of previous conversations with this user. This context is for YOUR reference only — do NOT mention it, summarize it, or bring it up unless the user specifically asks about something you discussed before. Just greet them naturally and let them lead.
 
 ${memData.contextPrompt}
-
-This is context from our previous conversation. Remember these details when responding. If the user asks about what we discussed, you have this history to reference.
 
 ---
 
@@ -295,18 +271,17 @@ This is context from our previous conversation. Remember these details when resp
         }
       }
 
-      log?.(`[SESSION] initiating websocket${customFirstMessage ? " with context" : ""}...`, "debug");
+      log?.(`[SESSION] initiating websocket...`, "debug");
 
-      // Build session config with overrides (both firstMessage and system prompt)
+      // Build session config — only override system prompt (memory is silent)
       const sessionConfig: any = { signedUrl };
-      if (customFirstMessage || customSystemPrompt) {
+      if (customSystemPrompt) {
         sessionConfig.overrides = {
           agent: {
-            ...(customFirstMessage && { firstMessage: customFirstMessage }),
-            ...(customSystemPrompt && { prompt: { prompt: customSystemPrompt } }),
+            prompt: { prompt: customSystemPrompt },
           },
         };
-        log?.(`[OVERRIDES] Applied to startSession config`, "debug");
+        log?.(`[OVERRIDES] System prompt with memory applied`, "debug");
       }
 
       await conversation.startSession(sessionConfig);
