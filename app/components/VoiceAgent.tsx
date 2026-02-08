@@ -220,12 +220,12 @@ export default function VoiceAgent() {
 
       log?.(`[SESSION] initiating websocket${customFirstMessage ? " with custom first message" : ""}...`, "debug");
 
-      // Build session config with optional first_message override
+      // Build session config with optional firstMessage override
       const sessionConfig: any = { signedUrl };
       if (customFirstMessage) {
         sessionConfig.overrides = {
           agent: {
-            first_message: customFirstMessage,
+            firstMessage: customFirstMessage,
           },
         };
       }
