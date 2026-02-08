@@ -70,6 +70,16 @@
   --blob-4: #4a2a3a;
 }
 
+/* Palette 5: Cyber Cyan & Magenta */
+.palette5 {
+  --bg-0: #004aad;
+  --bg-1: #051c2c;
+  --blob-1: #00a2c7;
+  --blob-2: #d31b5d;
+  --blob-3: #00d9ff;
+  --blob-4: #051c2c;
+}
+
 /* Blobs container */
 .blobs {
   width: min(60vw, 60vh);
