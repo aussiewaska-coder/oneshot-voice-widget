@@ -513,7 +513,13 @@ This is context from our previous conversation. Remember these details when resp
         onChatOpenChange={setIsChatOpen}
       />
       <HackerLog palette={palette} onPaletteChange={setPalette} connectionStatus={connectionStatus} />
-      <DocModal isOpen={docModalOpen} onClose={() => setDocModalOpen(false)} health={health} />
+      <DocModal
+        isOpen={docModalOpen}
+        onClose={() => setDocModalOpen(false)}
+        health={health}
+        onConnect={handleConnect}
+        onDisconnect={handleDisconnect}
+      />
     </div>
   );
 }

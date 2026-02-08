@@ -8,9 +8,11 @@ interface DocModalProps {
   isOpen: boolean;
   onClose: () => void;
   health: SystemHealth;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
-export default function DocModal({ isOpen, onClose, health }: DocModalProps) {
+export default function DocModal({ isOpen, onClose, health, onConnect, onDisconnect }: DocModalProps) {
   const [selectedSectionId, setSelectedSectionId] = useState("overview");
   const [complexityLevel, setComplexityLevel] = useState<ComplexityLevel>("middle");
   const [isClosing, setIsClosing] = useState(false);
@@ -97,7 +99,7 @@ export default function DocModal({ isOpen, onClose, health }: DocModalProps) {
           {/* Health Dashboard */}
           <div className="px-6 py-4 border-b border-white/10 bg-white/[0.02]">
             <h2 className="text-sm font-semibold text-white/80 mb-3">System Health</h2>
-            <HealthDashboard health={health} />
+            <HealthDashboard health={health} onConnect={onConnect} onDisconnect={onDisconnect} />
           </div>
 
           {/* Main content area */}

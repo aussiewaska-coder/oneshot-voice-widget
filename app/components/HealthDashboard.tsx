@@ -32,6 +32,8 @@ export interface SystemHealth {
 
 interface HealthDashboardProps {
   health: SystemHealth;
+  onConnect?: () => void;
+  onDisconnect?: () => void;
 }
 
 function formatUptime(ms: number): string {
@@ -99,7 +101,7 @@ function HealthCard({
   );
 }
 
-export default function HealthDashboard({ health }: HealthDashboardProps) {
+export default function HealthDashboard({ health, onConnect, onDisconnect }: HealthDashboardProps) {
   const connectionDetails = useMemo(() => {
     const isConnected = health.connection.wsStatus === "connected";
     const uptime = formatUptime(health.connection.uptimeMs);
@@ -139,12 +141,68 @@ export default function HealthDashboard({ health }: HealthDashboardProps) {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-4 gap-3">
-        <HealthCard
-          title="Connection"
-          status={health.connection.status}
-          details={connectionDetails}
-          isActive={health.connection.wsStatus === "connected"}
-        />
+        {/* Connection card as button if callbacks provided */}
+        {(onConnect || onDisconnect) ? (
+          <button
+            onClick={() => {
+              if (health.connection.wsStatus === "connected") {
+                onDisconnect?.();
+              } else {
+                onConnect?.();
+              }
+            }}
+            className={`flex-1 p-4 rounded-lg border transition-all cursor-pointer ${
+              health.connection.status === "healthy"
+                ? "border-green-500/40 bg-white/5 hover:bg-white/10"
+                : health.connection.status === "degraded"
+                  ? "border-amber-500/40 bg-white/5 hover:bg-white/10"
+                  : "border-white/10 bg-white/5 hover:bg-white/10"
+            }`}
+            title={`Click to ${health.connection.wsStatus === "connected" ? "disconnect" : "connect"}`}
+            aria-label={`Connection status: ${connectionDetails}`}
+          >
+            <div className="flex items-center gap-2 mb-2">
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  health.connection.status === "healthy"
+                    ? "bg-green-400 animate-pulse"
+                    : health.connection.status === "degraded"
+                      ? "bg-amber-400"
+                      : "bg-white/20"
+                }`}
+              />
+              <h3
+                className={`text-sm font-mono font-bold ${
+                  health.connection.status === "healthy"
+                    ? "text-green-400"
+                    : health.connection.status === "degraded"
+                      ? "text-amber-400"
+                      : "text-white/40"
+                }`}
+              >
+                Connection
+              </h3>
+            </div>
+            <p
+              className={`text-xs font-mono ${
+                health.connection.status === "healthy"
+                  ? "text-green-400/70"
+                  : health.connection.status === "degraded"
+                    ? "text-amber-400/70"
+                    : "text-white/40"
+              }`}
+            >
+              {connectionDetails}
+            </p>
+          </button>
+        ) : (
+          <HealthCard
+            title="Connection"
+            status={health.connection.status}
+            details={connectionDetails}
+            isActive={health.connection.wsStatus === "connected"}
+          />
+        )}
         <HealthCard
           title="Memory"
           status={health.memory.status}
