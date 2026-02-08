@@ -50,7 +50,7 @@ export default function GlassChat({
   };
 
   return (
-    <div className="absolute right-5 top-5 bottom-5 w-[420px] max-w-[calc(100vw-5rem)] z-20 flex flex-col rounded-3xl overflow-hidden chat-glass">
+    <div className="absolute right-5 top-5 bottom-5 w-[420px] max-w-[calc(100vw-5rem)] z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu">
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-6 py-4">
         <div className="flex items-center gap-3">
@@ -136,24 +136,24 @@ export default function GlassChat({
               >
                 {isUser ? (
                   /* ── User bubble ── */
-                  <div className="max-w-[82%] px-4 py-2.5 rounded-2xl rounded-br-sm bg-white/[0.1] border border-white/[0.06] backdrop-blur-sm">
-                    <p className="text-[13px] leading-relaxed text-white/90">
+                  <div className="max-w-[82%] px-4 py-2.5 rounded-2xl rounded-br-sm bg-gradient-to-br from-white/[0.12] to-white/[0.06] border border-white/[0.08] backdrop-blur-sm transition-all duration-300 hover:border-white/[0.15] hover:from-white/[0.15]">
+                    <p className="text-[13px] leading-relaxed text-white/90 font-light">
                       {msg.text}
                     </p>
                   </div>
                 ) : (
                   /* ── Agent message ── */
                   <div className="max-w-[92%] pl-1">
-                    {/* Tiny accent bar */}
+                    {/* Tiny accent bar with liquid flow */}
                     <div className="flex items-start gap-3">
-                      <div className="w-[2px] mt-1 self-stretch rounded-full bg-gradient-to-b from-white/30 to-transparent flex-shrink-0" />
-                      <div className="text-[13px] leading-[1.7] text-white/80 font-light">
+                      <div className="w-[2px] mt-1 self-stretch rounded-full bg-gradient-to-b from-cyan-400/50 via-blue-400/30 to-transparent flex-shrink-0 transition-all duration-300" />
+                      <div className="text-[13px] leading-[1.7] text-white/85 font-light font-ubuntu">
                         {isLatestAgent ? (
                           <Response className="streamdown">
                             {msg.text}
                           </Response>
                         ) : (
-                          <p>{msg.text}</p>
+                          <p className="text-white/80">{msg.text}</p>
                         )}
                       </div>
                     </div>
