@@ -1,31 +1,135 @@
 "use client";
 
-import { ShimmeringText } from "@/components/ui/shimmering-text";
+import { useState } from "react";
 
 const CAPABILITIES = [
-  "Operator Directory & Lookups",
-  "Service Manuals & Technical Guides",
-  "Diagnostic Support",
-  "Real-time Voice Assistance",
-  "Memory-based Conversation",
-  "Vehicle Assessment Guidance",
+  {
+    name: "Operator Lookup",
+    description: "Search and retrieve operator information instantly",
+    tooltip: "Find operator details, contacts, and availability. Click to interact with this feature.",
+  },
+  {
+    name: "Tug Services",
+    description: "Access comprehensive tug service options and schedules",
+    tooltip: "Explore available tug services, scheduling, and fleet information. Click to learn more.",
+  },
+  {
+    name: "Tug Manuals",
+    description: "Browse technical and operational documentation",
+    tooltip: "Access manuals, guides, and technical specifications. Click to view documentation.",
+  },
+  {
+    name: "Tug1300 Integration",
+    description: "Direct integration with Tug1300 systems",
+    tooltip: "Connect and interact with Tug1300 systems for real-time data. Click to enable.",
+  },
+  {
+    name: "SMS Integration",
+    description: "Send and receive SMS messages via the bot",
+    tooltip: "Communicate via SMS through the bot interface. Click to activate SMS mode.",
+  },
+  {
+    name: "Conversationalism",
+    description: "Natural, human-like dialogue and context awareness",
+    tooltip: "Experience natural conversation with contextual understanding. Click to chat.",
+  },
 ];
 
 export default function CapabilitiesList() {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
+  const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
+
   return (
     <div className="absolute top-32 left-1/2 transform -translate-x-1/2 z-10 w-full max-w-2xl px-8">
-      <div className="space-y-3">
+      <style>{`
+        @keyframes rollIn {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes pulseBlip {
+          0%, 100% {
+            opacity: 0.4;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 1;
+            transform: scale(1.3);
+          }
+        }
+
+        @keyframes glow {
+          0%, 100% {
+            text-shadow: 0 0 0px rgba(100, 200, 255, 0);
+          }
+          50% {
+            text-shadow: 0 0 12px rgba(100, 200, 255, 0.8), 0 0 24px rgba(59, 130, 246, 0.5);
+          }
+        }
+
+        .capability-item {
+          animation: rollIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+          opacity: 0;
+        }
+
+        .capability-bullet {
+          animation: pulseBlip 2s ease-in-out infinite;
+        }
+
+        .capability-item.hovered {
+          animation: glow 1.5s ease-in-out infinite;
+        }
+      `}</style>
+
+      <div className="space-y-4">
         {CAPABILITIES.map((capability, index) => (
-          <div key={index} className="flex items-center gap-3">
-            <div className="w-2 h-2 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 flex-shrink-0" />
-            <ShimmeringText
-              text={capability}
-              className="text-sm font-light"
-              color="rgba(100, 150, 255, 0.4)"
-              shimmerColor="rgba(100, 200, 255, 0.7)"
-              duration={3}
-              spread={1}
-            />
+          <div
+            key={index}
+            className="capability-item relative"
+            style={{
+              animationDelay: `${index * 0.15}s`,
+            }}
+            onMouseEnter={() => setHoveredIndex(index)}
+            onMouseLeave={() => setHoveredIndex(null)}
+            onClick={() => setExpandedIndex(expandedIndex === index ? null : index)}
+          >
+            <div className="flex items-start gap-4 cursor-pointer group">
+              {/* Pulsing bullet */}
+              <div
+                className="capability-bullet w-2.5 h-2.5 rounded-full bg-gradient-to-r from-cyan-400 to-blue-400 flex-shrink-0 mt-1.5"
+                style={{
+                  animationDelay: `${index * 0.15}s`,
+                }}
+              />
+
+              {/* Capability text */}
+              <div className="flex-1">
+                <p
+                  className={`font-ubuntu text-base font-light transition-all duration-300 ${
+                    hoveredIndex === index
+                      ? "text-cyan-300 capability-item hovered"
+                      : "text-cyan-400/60"
+                  }`}
+                >
+                  {capability.name}
+                </p>
+
+                {/* Tooltip on click */}
+                {expandedIndex === index && (
+                  <div className="mt-2 p-3 bg-black/60 border border-cyan-400/30 rounded-lg animate-in fade-in duration-200">
+                    <p className="font-ubuntu text-xs text-cyan-300/80 leading-relaxed">
+                      {capability.tooltip}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
         ))}
       </div>

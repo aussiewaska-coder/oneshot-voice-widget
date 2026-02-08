@@ -18,6 +18,24 @@ const PALETTE_COLORS = [
   { id: 5, bg0: "#004aad", bg1: "#051c2c" },
 ];
 
+const ELEVENLABS_VOICES = [
+  "Adam", "Bella", "Benjamin", "Callum", "Charlotte", "Chris", "Daniel", "Dave",
+  "Dillan", "Donald", "Dylan", "Ethan", "Eve", "Fin", "Freya", "Gigi", "Grace",
+  "Hank", "Hannah", "Harry", "Henri", "Hugo", "Irina", "Ivy", "Jackson", "James",
+  "Jane", "Jason", "Jean", "Jelly", "Jenny", "Jeremy", "Jesse", "Jessica", "Joe",
+  "Joey", "John", "Joseph", "Josh", "Josie", "Joyce", "Jules", "Julian", "Julie",
+  "Juno", "Kaiser", "Kali", "Kara", "Karen", "Keith", "Kelley", "Kelly", "Kenneth",
+  "Kenny", "Kevin", "Kim", "Kimi", "King", "Kira", "Krystal", "Kyle", "Kyra", "Laura",
+  "Lauren", "Lauryn", "Lea", "Leon", "Leona", "Leslie", "Liam", "Lina", "Linda",
+  "Liz", "Lola", "London", "Lora", "Lorenzo", "Louis", "Louise", "Loyd", "Lucia",
+  "Lucien", "Lucio", "Lucy", "Luis", "Luke", "Lyam", "Lyla", "Lyn", "Lynda", "Lynn",
+  "Mabel", "Mace", "Madeleine", "Madison", "Madelyn", "Mae", "Mafini", "Mag", "Magali",
+];
+
+function getRandomVoice(): string {
+  return ELEVENLABS_VOICES[Math.floor(Math.random() * ELEVENLABS_VOICES.length)];
+}
+
 interface HackerLogProps {
   palette?: number;
   onPaletteChange?: (palette: number) => void;
@@ -28,6 +46,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [selectedVoice, setSelectedVoice] = useState<string>(getRandomVoice());
   const containerRef = useRef<HTMLDivElement>(null);
   const closeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -110,10 +129,11 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
 
       {/* Log panel */}
       {isVisible && (
-        <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg z-40 ${
+        <div className={`absolute bottom-5 left-5 w-[480px] h-[500px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] z-40 ${
           isClosing ? "animate-[genieOut_0.7s_ease-in-out_forwards]" : "animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]"
         }`} style={{
           transformOrigin: "left center",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(0, 0, 0, 0.3) inset",
         }}>
           {/* Top visualization section - Brain is thinking when online */}
           <style>{`
@@ -204,14 +224,35 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
                 Status: {connectionStatus === "connecting" ? "Initializing..." : connectionStatus === "connected" ? "Active" : "Standby"}
               </div>
             </div>
+
+            {/* Voice selector */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                onClick={() => setSelectedVoice(getRandomVoice())}
+                className="flex items-center gap-1.5 px-2 py-1 rounded border border-green-500/30 hover:border-green-500/60 hover:bg-green-500/10 transition-all group cursor-pointer"
+                title="Click to select a random voice"
+                aria-label="Select voice"
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-green-400/60 group-hover:text-green-400">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+                <span className="text-[9px] text-green-400/60 group-hover:text-green-400 font-mono whitespace-nowrap">{selectedVoice}</span>
+              </button>
+            </div>
           </div>
 
           {/* Header */}
-          <div className="px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between">
-            <span className="text-green-400 font-bold text-[10px]">HACKER_LOG.SYS</span>
+          <div className="relative px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between overflow-hidden">
+            {/* Matrix background */}
+            <div className="absolute inset-0 overflow-hidden opacity-20">
+              <Matrix rows={3} cols={20} frames={loader} fps={8} loop size={5} gap={0.8} />
+            </div>
+
+            <span className="relative text-green-400 font-bold text-[10px] z-10">HACKER_LOG.SYS</span>
 
             {/* Palette selector */}
-            <div className="flex items-center gap-1.5">
+            <div className="relative flex items-center gap-1.5 z-10">
               {PALETTE_COLORS.map((p) => (
                 <button
                   key={p.id}
@@ -228,7 +269,7 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
               ))}
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="relative flex items-center gap-2 z-10">
               <span className="text-green-400/60 text-[9px]">[{logs.length}/50]</span>
               <button
                 onClick={handleClose}
