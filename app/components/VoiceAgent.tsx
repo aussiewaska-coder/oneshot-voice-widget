@@ -312,7 +312,7 @@ This is context from our previous conversation. Remember these details when resp
     messageIdCounter.current = 0;
   }, []);
 
-  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight (open logs)
+  // Keyboard shortcuts: Spacebar (connect/disconnect), ArrowLeft (open chat), ArrowRight/Tab (toggle logs)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space" && !connectionStatus.includes("nnecting")) {
@@ -325,9 +325,9 @@ This is context from our previous conversation. Remember these details when resp
       } else if (e.code === "ArrowLeft") {
         e.preventDefault();
         (window as any).openChat?.();
-      } else if (e.code === "ArrowRight") {
+      } else if (e.code === "ArrowRight" || e.code === "Tab") {
         e.preventDefault();
-        (window as any).openHackerLog?.();
+        (window as any).toggleHackerLog?.();
       }
     };
 
@@ -344,7 +344,6 @@ This is context from our previous conversation. Remember these details when resp
         outputVolume={outputVolume}
         isSpeaking={conversation.isSpeaking}
         isConnected={connectionStatus === "connected"}
-        isChatOpen={isChatOpen}
         onPaletteChange={setPalette}
       />
       <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />

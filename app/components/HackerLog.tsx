@@ -43,10 +43,12 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
     }
   }, [logs]);
 
-  // Expose openHackerLog function to window for keyboard shortcuts
+  // Expose toggleHackerLog function to window for keyboard shortcuts
   useEffect(() => {
-    (window as any).openHackerLog = () => setIsVisible(true);
+    (window as any).toggleHackerLog = () => setIsVisible((prev) => !prev);
+    (window as any).openHackerLog = () => setIsVisible(true); // Keep for backwards compatibility
     return () => {
+      delete (window as any).toggleHackerLog;
       delete (window as any).openHackerLog;
     };
   }, []);
