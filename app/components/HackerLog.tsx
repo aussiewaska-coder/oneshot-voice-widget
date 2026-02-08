@@ -57,7 +57,9 @@ export default function HackerLog() {
 
       {/* Log panel */}
       {isVisible && (
-        <div className="absolute bottom-5 left-16 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg">
+        <div className="absolute bottom-5 left-16 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)]" style={{
+          transformOrigin: "left center",
+        }}>
           {/* Header */}
           <div className="px-3 py-2 border-b border-green-500/20 bg-black/50 flex items-center justify-between">
             <span className="text-green-400 font-bold">HACKER_LOG.SYS</span>

@@ -169,3 +169,19 @@ body {
     background-position: 1000px 0;
   }
 }
+
+/* Genie pop-in animation */
+@keyframes genieIn {
+  0% {
+    opacity: 0;
+    transform: scale(0) scaleX(0);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.05) scaleX(1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) scaleX(1);
+  }
+}
