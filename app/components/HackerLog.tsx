@@ -161,6 +161,29 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
               0% { transform: translateY(-100%); opacity: 1; }
               100% { transform: translateY(100%); opacity: 0; }
             }
+            @keyframes redLedRotate {
+              0% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), inset 0 0 10px rgba(239, 68, 68, 0.5);
+                transform: rotate(0deg);
+              }
+              50% {
+                box-shadow: 0 0 25px rgba(239, 68, 68, 1), inset 0 0 15px rgba(239, 68, 68, 0.8);
+              }
+              100% {
+                box-shadow: 0 0 15px rgba(239, 68, 68, 0.8), inset 0 0 10px rgba(239, 68, 68, 0.5);
+                transform: rotate(360deg);
+              }
+            }
+            @keyframes shimmer {
+              0%, 100% {
+                opacity: 1;
+                transform: scale(1);
+              }
+              50% {
+                opacity: 0.7;
+                transform: scale(1.1);
+              }
+            }
           `}</style>
           <div className="px-6 py-6 border-b border-green-500/20 bg-black/70 flex items-center justify-between gap-6">
             {/* Matrix rain background + ring */}
@@ -172,12 +195,17 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
                 )}
               </div>
 
-              {/* Thinking ring - only animates when connected */}
+              {/* Thinking ring - clickable when connected */}
               {connectionStatus === "connected" && (
-                <div className="relative w-16 h-16">
+                <button
+                  onClick={() => (window as any).toggleDocModal?.()}
+                  className="relative w-16 h-16 cursor-pointer group"
+                  aria-label="Open documentation"
+                  title="Click to open documentation"
+                >
                   {/* Outer rotating ring */}
                   <div
-                    className="absolute inset-0 border-2 border-transparent border-t-cyan-400 border-r-blue-400 rounded-full"
+                    className="absolute inset-0 border-2 border-transparent border-t-cyan-400 border-r-blue-400 rounded-full group-hover:animate-pulse"
                     style={{
                       animation: "spin 3s cubic-bezier(0.6, 0.2, 0.2, 0.6) infinite",
                       boxShadow: "0 0 15px rgba(34, 211, 238, 0.6), inset 0 0 15px rgba(59, 130, 246, 0.2)",
@@ -185,30 +213,45 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
                   />
                   {/* Inner morphing shape */}
                   <div
-                    className="absolute inset-3 border-2 border-green-400 bg-gradient-to-br from-green-500/10 to-cyan-500/5"
+                    className="absolute inset-3 border-2 border-green-400 bg-gradient-to-br from-green-500/10 to-cyan-500/5 group-hover:from-green-500/20 group-hover:to-cyan-500/10 transition-all"
                     style={{
                       animation: "thinkingRing 4s ease-in-out infinite",
                       boxShadow: "0 0 20px rgba(34, 211, 238, 0.4), 0 0 40px rgba(16, 185, 129, 0.2)",
                     }}
                   />
                   {/* Pulse center dot */}
-                  <div className="absolute inset-5 bg-gradient-to-b from-cyan-400 to-green-400 rounded-full"
+                  <div className="absolute inset-5 bg-gradient-to-b from-cyan-400 to-green-400 rounded-full group-hover:animate-bounce"
                     style={{
                       animation: "pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
                       boxShadow: "0 0 10px rgba(34, 211, 238, 0.8)",
                     }}
                   />
-                </div>
+                </button>
               )}
 
-              {/* Offline indicator */}
+              {/* Offline indicator - Red LED rotating effect */}
               {connectionStatus !== "connected" && (
-                <div className="flex flex-col items-center justify-center gap-1">
-                  <div className="w-12 h-12 border-2 border-red-500/50 rounded-full flex items-center justify-center">
-                    <div className="w-3 h-3 bg-red-500 rounded-full" />
+                <button
+                  onClick={() => (window as any).toggleDocModal?.()}
+                  className="flex flex-col items-center justify-center gap-1 cursor-pointer group"
+                  aria-label="Open documentation"
+                  title="Click to open documentation (offline mode)"
+                >
+                  <div
+                    className="w-12 h-12 border-2 border-red-600 rounded-full flex items-center justify-center group-hover:animate-pulse"
+                    style={{
+                      animation: "redLedRotate 2s linear infinite",
+                      backgroundColor: "rgba(220, 38, 38, 0.1)",
+                    }}
+                  >
+                    <div className="w-3 h-3 bg-red-500 rounded-full"
+                      style={{
+                        boxShadow: "0 0 8px rgba(239, 68, 68, 0.8), 0 0 16px rgba(220, 38, 38, 0.6)",
+                      }}
+                    />
                   </div>
-                  <span className="text-[10px] text-red-400/60">OFFLINE</span>
-                </div>
+                  <span className="text-[10px] text-red-400/60 group-hover:text-red-400">OFFLINE</span>
+                </button>
               )}
             </div>
 
@@ -273,11 +316,11 @@ export default function HackerLog({ palette = 5, onPaletteChange, connectionStat
               {/* Doc button */}
               <button
                 onClick={() => (window as any).toggleDocModal?.()}
-                className="p-1 rounded text-green-400/60 hover:text-green-400 transition-colors"
+                className="p-2 rounded text-green-400/60 hover:text-green-400 hover:bg-green-400/10 transition-all"
                 aria-label="Open documentation"
                 title="System Documentation (Press D)"
               >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
                   <polyline points="14 2 14 8 20 8" />
                   <line x1="16" y1="13" x2="8" y2="13" />
