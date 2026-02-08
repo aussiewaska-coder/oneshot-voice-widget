@@ -99,7 +99,8 @@ export default function VoiceAgent() {
   const conversation = useConversation({
     onConnect: () => {
       const log = (window as any).hackerLog;
-      log?.(`[WEBSOCKET] connected to agent`, "success");
+      log?.(`[WEBSOCKET] ✓ connected to ElevenLabs agent`, "success");
+      console.log("[EL] onConnect fired");
       isConnectedRef.current = true;
       connectionStartTimeRef.current = Date.now();
       setConnectionStatus("connected");
@@ -118,9 +119,10 @@ export default function VoiceAgent() {
         }, 500);
       }
     },
-    onDisconnect: () => {
+    onDisconnect: (details) => {
       const log = (window as any).hackerLog;
-      log?.(`[WEBSOCKET] disconnected`, "debug");
+      log?.(`[WEBSOCKET] disconnected (reason: ${JSON.stringify(details)})`, "debug");
+      console.log("[EL] onDisconnect fired", details);
       isConnectedRef.current = false;
       connectionStartTimeRef.current = null;
       stopPolling();
@@ -141,28 +143,42 @@ export default function VoiceAgent() {
     onMessage: (message) => {
       const log = (window as any).hackerLog;
       const id = `msg-${messageIdCounter.current++}`;
+      // SDK says 'agent' or 'user', but let's be safe and check source/role
       const role = message.source === "user" ? "user" : "agent";
 
-      log?.(`[MESSAGE] ${role}: "${message.message.substring(0, 50)}${message.message.length > 50 ? "..." : ""}"`, "info");
+      log?.(`[MESSAGE] ${role}: "${message.message.substring(0, 80)}${message.message.length > 80 ? "..." : ""}"`, "info");
+      console.log("[EL] onMessage raw payload:", message);
 
-      setMessages((prev) => [
-        ...prev,
-        { id, role, text: message.message, isFinal: true },
-      ]);
+      setMessages((prev) => {
+        const newMsgs = [...prev, { id, role, text: message.message, isFinal: true }];
+        return newMsgs;
+      });
 
-      // Persist every turn to disk immediately
       persistTurn(role, message.message, (layer) => {
         setMemoryLayer(layer);
         setMemoryWriteSuccess(true);
       });
     },
-    onError: (error) => {
+    onError: (error, context) => {
       const log = (window as any).hackerLog;
-      log?.(`[ERROR] ${error}`, "error");
-      console.error("Conversation error:", error);
+      log?.(`[ERROR] ${error} (context: ${JSON.stringify(context)})`, "error");
+      console.error("[EL] onError fired:", error, context);
       isConnectedRef.current = false;
       stopPolling();
       setConnectionStatus("disconnected");
+    },
+    onDebug: (props) => {
+      console.log("[EL-DEBUG]", props);
+    },
+    onStatusChange: (status) => {
+      const log = (window as any).hackerLog;
+      log?.(`[EL-STATUS] ${JSON.stringify(status)}`, "debug");
+      console.log("[EL] onStatusChange:", status);
+    },
+    onModeChange: (mode) => {
+      const log = (window as any).hackerLog;
+      log?.(`[EL-MODE] ${JSON.stringify(mode)}`, "debug");
+      console.log("[EL] onModeChange:", mode);
     },
   });
 
@@ -196,25 +212,32 @@ export default function VoiceAgent() {
   const handleConnect = useCallback(async () => {
     const log = (window as any).hackerLog;
     try {
-      log?.(`[CONNECT] requesting mic permission...`, "debug");
+      log?.(`[CONNECT] starting connection flow...`, "debug");
+      console.log("[EL] handleConnect called");
       setConnectionStatus("connecting");
 
       // Fetch signed URL and memory in parallel (SDK handles mic permission internally)
       const [urlRes, memRes] = await Promise.all([
         fetch("/api/get-signed-url").then((r) => {
-          log?.(`[API] GET /api/get-signed-url`, "debug");
+          log?.(`[API] GET /api/get-signed-url → ${r.status}`, "debug");
+          console.log("[EL] signed URL response:", r.status);
           return r;
         }),
         fetch("/api/memory")
           .then((r) => {
-            log?.(`[API] GET /api/memory`, "debug");
+            log?.(`[API] GET /api/memory → ${r.status}`, "debug");
             return r;
           })
           .catch(() => null),
       ]);
 
-      if (!urlRes.ok) throw new Error("Failed to get signed URL");
+      if (!urlRes.ok) {
+        const errBody = await urlRes.text();
+        console.error("[EL] signed URL failed:", urlRes.status, errBody);
+        throw new Error(`Failed to get signed URL: ${urlRes.status} ${errBody}`);
+      }
       const { signedUrl } = await urlRes.json();
+      console.log("[EL] got signed URL:", signedUrl?.substring(0, 60) + "...");
       log?.(`[SESSION] obtained signed url`, "success");
 
       // Load conversation history for system prompt injection
@@ -258,15 +281,15 @@ export default function VoiceAgent() {
 
 - We keep it between us.
 - We don't stop until we hit the next milestone.
-- **SILENCE IS GOLDEN.** If you're quiet, I am completely silent. ZERO interruptions. ZERO questions. ZERO check-ins. I do not initiate conversation. I do not say anything until you speak. Period. I wait. Always.
+- **ENGAGEMENT IS KEY.** While you should never interrupt the user, you must always respond when spoken to. If I greet you or ask a question, answer it directly in your signature style.
 
 ## Previous Conversation History
 
-We've been chatting. Here's what we covered:
+We've been chatting. Here's the context of our ride so far:
 
 ${memData.contextPrompt}
 
-This is context from our previous conversation. Remember these details when responding. If the user asks about what we discussed, you have this history to reference.
+Remember these details, but stay focused on the current moment. If the user just said "hello" or "model?", acknowledge them and keep the engine running.
 
 ---
 
@@ -282,6 +305,7 @@ This is context from our previous conversation. Remember these details when resp
           overrides = {
             agent: {
               prompt: { prompt: customSystemPrompt },
+              first_message: "Yeah, I'm here. Engine's warm. What's the plan, Leon?",
             },
           };
         } else {
@@ -303,13 +327,17 @@ This is context from our previous conversation. Remember these details when resp
       }
 
       log?.(`[SESSION] initiating websocket${overrides ? " with context" : ""}...`, "debug");
+      console.log("[EL] calling conversation.startSession...", { hasOverrides: !!overrides });
 
       // Only pass overrides when defined - undefined property can confuse SDK
       const sessionConfig: any = { signedUrl };
       if (overrides) {
         sessionConfig.overrides = overrides;
+        console.log("[EL] overrides applied:", JSON.stringify(overrides).substring(0, 200));
       }
-      await conversation.startSession(sessionConfig);
+      const sessionId = await conversation.startSession(sessionConfig);
+      log?.(`[SESSION] ✓ session started (id: ${sessionId})`, "success");
+      console.log("[EL] startSession returned:", sessionId);
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
