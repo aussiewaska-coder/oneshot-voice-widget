@@ -89,7 +89,7 @@ export default function GlassChat({
 
   return (
     <div
-      className={`absolute right-5 top-5 z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu transition-all duration-500 ease-out ${
+      className={`absolute right-5 top-5 z-20 flex flex-col rounded-3xl overflow-hidden chat-glass font-ubuntu transition-all duration-700 ease-in-out ${
         isCollapsed
           ? "w-auto h-auto"
           : "bottom-5 w-[420px] max-w-[calc(100vw-5rem)]"
@@ -105,7 +105,7 @@ export default function GlassChat({
       <div className={`flex items-center justify-between ${isCollapsed ? "px-3 py-2 gap-2" : "px-6 py-4"}`}>
         {isCollapsed ? (
           // Collapsed: show icon + status + connect button
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             <button
               onClick={() => setIsCollapsed(false)}
               className="p-2 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all"
@@ -135,61 +135,64 @@ export default function GlassChat({
             </span>
           </div>
         ) : (
-          // Expanded: show status text + connect button
-          <div className="flex items-center gap-3">
-            <span className="relative flex h-2.5 w-2.5">
-              {status === "connected" && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              )}
-              {status === "connecting" && (
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
-              )}
-              <span
-                className={`relative inline-flex h-2.5 w-2.5 rounded-full ${
-                  status === "connected"
-                    ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+          // Expanded: show connect button left, status + collapse right
+          <div className="flex items-center justify-between w-full gap-3">
+            {/* Connect button - left side, prominent */}
+            <button
+              onClick={status === "connected" ? onDisconnect : onConnect}
+              disabled={status === "connecting"}
+              className={`text-[12px] font-bold px-3 py-1.5 rounded-lg transition-all ${
+                status === "connected"
+                  ? "bg-red-500/30 text-red-200 hover:bg-red-500/40 shadow-[0_0_15px_rgba(239,68,68,0.3)]"
+                  : "bg-white/15 text-white/90 hover:bg-white/25 shadow-[0_0_15px_rgba(255,255,255,0.1)]"
+              } disabled:opacity-30 disabled:cursor-not-allowed`}
+            >
+              {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
+            </button>
+
+            {/* Status + collapse - right side */}
+            <div className="flex items-center gap-3 ml-auto">
+              <div className="flex items-center gap-2">
+                <span className="relative flex h-2 w-2">
+                  {status === "connected" && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
+                  )}
+                  {status === "connecting" && (
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-amber-400 opacity-60" />
+                  )}
+                  <span
+                    className={`relative inline-flex h-2 w-2 rounded-full ${
+                      status === "connected"
+                        ? "bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]"
+                        : status === "connecting"
+                        ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
+                        : "bg-white/20"
+                    }`}
+                  />
+                </span>
+                <span className="text-[10px] font-medium tracking-[0.1em] uppercase text-white/40">
+                  {status === "connected"
+                    ? isSpeaking
+                      ? "Speaking"
+                      : "Listening"
                     : status === "connecting"
-                    ? "bg-amber-400 shadow-[0_0_6px_rgba(251,191,36,0.8)]"
-                    : "bg-white/20"
-                }`}
-              />
-            </span>
-            <span className="text-[11px] font-medium tracking-[0.15em] uppercase text-white/50">
-              {status === "connected"
-                ? isSpeaking
-                  ? "Speaking"
-                  : "Listening"
-                : status === "connecting"
-                ? "Connecting"
-                : "Offline"}
-            </span>
+                    ? "Connecting"
+                    : "Offline"}
+                </span>
+              </div>
+
+              <button
+                onClick={() => setIsCollapsed(true)}
+                className="p-1 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all"
+                aria-label="Collapse chat"
+                title="Collapse chat"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 5v14M5 12h14" />
+                </svg>
+              </button>
+            </div>
           </div>
-        )}
-
-        {/* Connect button - always visible */}
-        <button
-          onClick={status === "connected" ? onDisconnect : onConnect}
-          disabled={status === "connecting"}
-          className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${
-            status === "connected"
-              ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-              : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/90"
-          } disabled:opacity-30 disabled:cursor-not-allowed`}
-        >
-          {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
-        </button>
-
-        {!isCollapsed && (
-          <button
-            onClick={() => setIsCollapsed(true)}
-            className="p-1 rounded-lg text-white/40 hover:text-white/70 hover:bg-white/10 transition-all"
-            aria-label="Collapse chat"
-            title="Collapse chat"
-          >
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 12h16M4 12l4-4m-4 4l4 4" />
-            </svg>
-          </button>
         )}
 
         {/* Speaking indicator bars */}
