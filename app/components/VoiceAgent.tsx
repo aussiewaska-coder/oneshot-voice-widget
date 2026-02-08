@@ -8,23 +8,43 @@ import PaletteSwitcher from "./PaletteSwitcher";
 import HackerLog from "./HackerLog";
 import { ChatMessage } from "./MessageBubble";
 
-// Fire-and-forget save — never blocks the conversation
+// Sequential queue ensures writes are ordered and never race each other
+let persistChain = Promise.resolve();
+
+async function persistWithRetry(role: "user" | "agent", text: string, maxRetries = 3) {
+  const log = (window as any).hackerLog;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      const res = await fetch("/api/memory", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role, text }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.ok) {
+          log?.(`[REDIS] ✓ COMMITTED to persistent store`, "success");
+          return;
+        }
+        log?.(`[REDIS] ✗ server returned ok:false (attempt ${attempt}/${maxRetries})`, "error");
+      } else {
+        log?.(`[REDIS] ✗ HTTP ${res.status} (attempt ${attempt}/${maxRetries})`, "error");
+      }
+    } catch (err: any) {
+      log?.(`[REDIS] ✗ WRITE FAILED: ${err.message} (attempt ${attempt}/${maxRetries})`, "error");
+    }
+    if (attempt < maxRetries) {
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
+  }
+  log?.(`[REDIS] ✗ GAVE UP after ${maxRetries} attempts — turn lost`, "error");
+}
+
 function persistTurn(role: "user" | "agent", text: string) {
   const log = (window as any).hackerLog;
   log?.(`[REDIS] WRITE ${role.toUpperCase()} → "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}"`, "debug");
-  fetch("/api/memory", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ role, text }),
-  })
-    .then((res) => {
-      if (res.ok) {
-        log?.(`[REDIS] ✓ COMMITTED to persistent store`, "success");
-      } else {
-        log?.(`[REDIS] ✗ HTTP ${res.status}`, "error");
-      }
-    })
-    .catch((err) => log?.(`[REDIS] ✗ WRITE FAILED: ${err.message}`, "error"));
+  // Chain writes sequentially so server sees them in order
+  persistChain = persistChain.then(() => persistWithRetry(role, text));
 }
 
 export default function VoiceAgent() {
@@ -40,8 +60,9 @@ export default function VoiceAgent() {
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
   const isConnectedRef = useRef(false);
-  const contextInjectedRef = useRef(false);
-  const pendingContextRef = useRef<string | null>(null);
+  // Context is now injected solely via system prompt override in startSession.
+  // sendContextualUpdate is no longer used (it was redundant and caused
+  // duplicate context that confused the agent).
   const intentionalDisconnectRef = useRef(false);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -91,17 +112,8 @@ export default function VoiceAgent() {
       isConnectedRef.current = true;
       setConnectionStatus("connected");
 
-      // Inject pending context immediately after connect
-      if (pendingContextRef.current && !contextInjectedRef.current) {
-        contextInjectedRef.current = true;
-        log?.(`[CONTEXT] injecting via sendContextualUpdate...`, "debug");
-        try {
-          conversation.sendContextualUpdate(pendingContextRef.current);
-          log?.(`[CONTEXT] ✓ sent`, "success");
-        } catch (err) {
-          log?.(`[CONTEXT] ✗ failed: ${err}`, "error");
-        }
-      }
+      // Context is injected via system prompt override in startSession —
+      // no need for sendContextualUpdate here.
     },
     onDisconnect: () => {
       const log = (window as any).hackerLog;
@@ -278,9 +290,6 @@ This is context from our previous conversation. Remember these details when resp
           customSystemPrompt = basePrompt;
           log?.(`[PROMPT] System prompt enhanced with conversation history (${customSystemPrompt.length} chars)`, "success");
 
-          // Still store context for sendContextualUpdate as fallback
-          pendingContextRef.current = memData.contextPrompt;
-          contextInjectedRef.current = false;
         } else {
           log?.(`[REDIS] → no prior context (fresh session)`, "debug");
         }

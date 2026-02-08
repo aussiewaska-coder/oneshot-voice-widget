@@ -126,33 +126,45 @@ async function writeMemoryRedis(memory: ConversationMemory): Promise<void> {
   writeMemoryLocal(memory);
 }
 
+// Serialize writes within the same serverless instance to prevent
+// concurrent read-modify-write from dropping turns.
+let writeLock: Promise<any> = Promise.resolve();
+
 /**
  * Append a single turn. Trims to MAX_TURNS. Writes immediately.
+ * Serialized via writeLock to prevent concurrent mutation races.
  */
 export async function saveTurn(role: "user" | "agent", text: string): Promise<ConversationMemory> {
-  console.log(`[MEMORY] saveTurn(${role}, "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}")`);
-  const memory = await readMemoryRedis();
-  console.log(`[MEMORY] read: ${memory.turns.length} turns`);
+  const doSave = async (): Promise<ConversationMemory> => {
+    console.log(`[MEMORY] saveTurn(${role}, "${text.substring(0, 60)}${text.length > 60 ? "..." : ""}")`);
+    const memory = await readMemoryRedis();
+    console.log(`[MEMORY] read: ${memory.turns.length} turns`);
 
-  memory.turns.push({
-    role,
-    text,
-    ts: new Date().toISOString(),
-  });
-  memory.totalTurns++;
-  console.log(`[MEMORY] appended | now: ${memory.turns.length} stored, ${memory.totalTurns} lifetime`);
+    memory.turns.push({
+      role,
+      text,
+      ts: new Date().toISOString(),
+    });
+    memory.totalTurns++;
+    console.log(`[MEMORY] appended | now: ${memory.turns.length} stored, ${memory.totalTurns} lifetime`);
 
-  // Trim oldest turns if over limit
-  if (memory.turns.length > MAX_TURNS) {
-    const overflow = memory.turns.length - MAX_TURNS;
-    console.log(`[MEMORY] ⚠ TRIMMING ${overflow} turns (keeping max ${MAX_TURNS})`);
-    memory.turns = memory.turns.slice(overflow);
-    memory.trimmedAt = new Date().toISOString();
-  }
+    // Trim oldest turns if over limit
+    if (memory.turns.length > MAX_TURNS) {
+      const overflow = memory.turns.length - MAX_TURNS;
+      console.log(`[MEMORY] ⚠ TRIMMING ${overflow} turns (keeping max ${MAX_TURNS})`);
+      memory.turns = memory.turns.slice(overflow);
+      memory.trimmedAt = new Date().toISOString();
+    }
 
-  await writeMemoryRedis(memory);
-  console.log(`[MEMORY] ✓ saveTurn complete`);
-  return memory;
+    await writeMemoryRedis(memory);
+    console.log(`[MEMORY] ✓ saveTurn complete`);
+    return memory;
+  };
+
+  // Chain behind any in-flight write so reads always see the latest state
+  const result = writeLock.then(doSave);
+  writeLock = result.catch(() => {}); // Don't let a failed write block future ones
+  return result;
 }
 
 /**

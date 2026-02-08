@@ -52,7 +52,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ ok: true, totalTurns: memory.totalTurns });
   } catch (error) {
     console.error("[REDIS] ✗ POST failed:", error);
-    // Don't fail the client — memory loss is better than blocking conversation
-    return NextResponse.json({ ok: false }, { status: 200 });
+    return NextResponse.json({ ok: false }, { status: 500 });
   }
 }
