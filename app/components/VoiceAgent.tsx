@@ -17,21 +17,18 @@ export default function VoiceAgent() {
 
   const conversation = useConversation({
     onConnect: () => {
-      console.log("[DRAGONS-DEN] Connected!");
+      console.log("[DRAGONS-DEN] WebSocket Connected");
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
-      console.log("[DRAGONS-DEN] Disconnected");
+      console.log("[DRAGONS-DEN] WebSocket Disconnected");
       setConnectionStatus("disconnected");
     },
     onMessage: (message) => {
-      console.log("[DRAGONS-DEN] Raw Message:", message);
+      console.log("[DRAGONS-DEN] Message:", message);
       const text = message.message || (message as any).text || "";
       if (!text) return;
-
-      const id = `msg-${messageIdCounter.current++}`;
-      const role = message.source === "user" ? "user" : "agent";
-      setMessages((prev) => [...prev, { id, role, text, isFinal: true }]);
+      setMessages((prev) => [...prev, { id: `msg-${messageIdCounter.current++}`, role: message.source === "user" ? "user" : "agent", text, isFinal: true }]);
     },
     onError: (error) => {
       console.error("[DRAGONS-DEN] Error:", error);
@@ -44,15 +41,8 @@ export default function VoiceAgent() {
       const res = await fetch("/api/get-signed-url");
       const { signedUrl } = await res.json();
       
-      await conversation.startSession({ 
-        signedUrl,
-        overrides: {
-          agent: {
-            prompt: { prompt: "You are Ray. Keep responses extremely short and direct." },
-            firstMessage: "Ready to go.",
-          }
-        }
-      });
+      console.log("[DRAGONS-DEN] Starting...");
+      await conversation.startSession({ signedUrl });
     } catch (e) {
       setConnectionStatus("disconnected");
     }
