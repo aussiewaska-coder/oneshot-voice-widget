@@ -81,13 +81,13 @@ export default function HackerLog({ palette = 5, onPaletteChange }: HackerLogPro
             <span className="text-green-400 font-bold text-[10px]">HACKER_LOG.SYS</span>
 
             {/* Palette selector */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1.5">
               {PALETTE_COLORS.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => onPaletteChange?.(p.id)}
-                  className={`w-2 h-2 rounded-full transition-all ${
-                    palette === p.id ? "ring-1 ring-white" : ""
+                  className={`w-4 h-4 rounded-full transition-all cursor-pointer ${
+                    palette === p.id ? "ring-2 ring-white scale-110" : "hover:scale-105"
                   }`}
                   style={{
                     background: `linear-gradient(135deg, ${p.bg0}, ${p.bg1})`,

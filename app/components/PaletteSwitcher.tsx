@@ -18,7 +18,7 @@ export default function PaletteSwitcher({
   onPaletteChange,
 }: PaletteSwitcherProps) {
   return (
-    <div className="absolute left-4 top-0 h-screen flex flex-col justify-center gap-4 z-30">
+    <div className="absolute left-4 top-0 h-screen flex flex-col justify-center gap-4 z-30 hidden">
       {palettes.map((p) => (
         <button
           key={p.id}
