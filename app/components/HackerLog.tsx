@@ -59,7 +59,7 @@ export default function HackerLog() {
 
       {/* Log panel */}
       {isVisible && (
-        <div className="absolute bottom-5 left-16 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
+        <div className="absolute bottom-5 left-5 w-[400px] h-[200px] bg-black/80 border border-green-500/40 rounded-lg overflow-hidden flex flex-col font-mono text-[11px] shadow-lg animate-[genieIn_0.4s_cubic-bezier(0.34,1.56,0.64,1)] z-40" style={{
           transformOrigin: "left center",
         }}>
           {/* Header */}
