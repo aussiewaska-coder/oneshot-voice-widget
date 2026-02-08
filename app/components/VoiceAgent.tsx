@@ -320,6 +320,7 @@ This is context from our previous conversation. Remember these details when resp
         outputVolume={outputVolume}
         isSpeaking={conversation.isSpeaking}
         isConnected={connectionStatus === "connected"}
+        onPaletteChange={setPalette}
       />
       <PaletteSwitcher activePalette={palette} onPaletteChange={setPalette} />
       <Logo />

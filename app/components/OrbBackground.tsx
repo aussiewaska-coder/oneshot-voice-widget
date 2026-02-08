@@ -9,7 +9,17 @@ interface OrbBackgroundProps {
   outputVolume: number;
   isSpeaking: boolean;
   isConnected: boolean;
+  onPaletteChange?: (palette: number) => void;
 }
+
+// Rich contrast palette combinations
+const CONTRAST_MAP: Record<number, number[]> = {
+  1: [3, 4, 5], // Blue -> Green, Moody, Cyan
+  2: [3, 4, 5], // Red -> Green, Moody, Cyan
+  3: [1, 2, 5], // Green -> Blue, Red, Cyan
+  4: [1, 2, 3], // Moody -> Blue, Red, Green
+  5: [1, 2, 4], // Cyan -> Blue, Red, Moody
+};
 
 const paletteMap: Record<number, string> = {
   1: styles.palette1,
@@ -25,6 +35,7 @@ export default function OrbBackground({
   inputVolume,
   outputVolume,
   isSpeaking,
+  onPaletteChange,
 }: OrbBackgroundProps) {
   const [offsetX, setOffsetX] = useState(0);
   const [offsetY, setOffsetY] = useState(0);
@@ -89,8 +100,19 @@ export default function OrbBackground({
 
   const paletteClass = paletteMap[palette] || paletteMap[1];
 
+  // Handle orb click - random contrasting palette
+  const handleOrbClick = () => {
+    const contrastOptions = CONTRAST_MAP[palette] || [1, 2, 3, 4, 5];
+    const randomPalette =
+      contrastOptions[Math.floor(Math.random() * contrastOptions.length)];
+    onPaletteChange?.(randomPalette);
+  };
+
   return (
-    <div className={`${styles.container} ${paletteClass}`}>
+    <div
+      className={`${styles.container} ${paletteClass} cursor-pointer`}
+      onClick={handleOrbClick}
+    >
       <div
         className={styles.blobs}
         style={{
