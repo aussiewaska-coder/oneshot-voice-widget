@@ -43,7 +43,7 @@ export default function GlassChat({
 }: GlassChatProps) {
   const [inputValue, setInputValue] = useState("");
   const [promptIndex, setPromptIndex] = useState(0);
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -119,20 +119,9 @@ export default function GlassChat({
                 }`}
               />
             </span>
-            <button
-              onClick={status === "connected" ? onDisconnect : onConnect}
-              disabled={status === "connecting"}
-              className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${
-                status === "connected"
-                  ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
-                  : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/90"
-              } disabled:opacity-30 disabled:cursor-not-allowed`}
-            >
-              {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
-            </button>
           </div>
         ) : (
-          // Expanded: show status text
+          // Expanded: show status text + connect button
           <div className="flex items-center gap-3">
             <span className="relative flex h-2.5 w-2.5">
               {status === "connected" && (
@@ -162,6 +151,19 @@ export default function GlassChat({
             </span>
           </div>
         )}
+
+        {/* Connect button - always visible */}
+        <button
+          onClick={status === "connected" ? onDisconnect : onConnect}
+          disabled={status === "connecting"}
+          className={`text-[10px] font-semibold px-2 py-1 rounded-lg transition-all ${
+            status === "connected"
+              ? "bg-red-500/20 text-red-300 hover:bg-red-500/30"
+              : "bg-white/10 text-white/60 hover:bg-white/20 hover:text-white/90"
+          } disabled:opacity-30 disabled:cursor-not-allowed`}
+        >
+          {status === "connected" ? "End" : status === "connecting" ? "..." : "Connect"}
+        </button>
 
         {!isCollapsed && (
           <button
