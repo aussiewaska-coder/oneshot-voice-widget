@@ -57,7 +57,16 @@ export function MobileBottomSheet({
   const [sheetState, setSheetState] = useState<BottomSheetState>("collapsed");
   const [activeTab, setActiveTab] = useState<"chat" | "logs" | "health">("chat");
   const [isDragging, setIsDragging] = useState(false);
+  const [showFullscreenButton, setShowFullscreenButton] = useState(false);
   const dragHandleRef = useRef<HTMLDivElement>(null);
+
+  // Fade in fullscreen button after 4 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowFullscreenButton(true);
+    }, 4000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Calculate height based on state
   const getSheetHeight = () => {
@@ -153,7 +162,7 @@ export function MobileBottomSheet({
       {/* Drag Handle + Status Bar */}
       <div
         ref={dragHandleRef}
-        className="flex flex-col items-center gap-4 px-4 md:px-6 py-5 border-b border-white/8 touch-none select-none"
+        className="flex flex-col items-center gap-2.5 px-4 md:px-6 py-4 border-b border-white/8 touch-none select-none"
         style={{ touchAction: "none" }}
       >
         {/* Drag Handle Visual */}
@@ -248,13 +257,13 @@ export function MobileBottomSheet({
     </div>
 
       {/* Fullscreen Button - Fixed top-right corner */}
-      {sheetState !== "full" && (
+      {sheetState !== "full" && showFullscreenButton && (
         <button
           onClick={() => {
             haptics.double();
             setSheetState("full");
           }}
-          className="fixed top-4 right-4 z-46 p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/15 border border-cyan-500/20 text-cyan-400 transition-all min-w-9 min-h-9 flex items-center justify-center"
+          className="fixed top-4 right-4 z-46 p-1.5 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/15 border border-cyan-500/20 text-cyan-400 transition-all duration-500 opacity-0 animate-fadeIn min-w-9 min-h-9 flex items-center justify-center"
           title="Expand to fullscreen"
           aria-label="Expand bottom sheet to fullscreen"
         >
