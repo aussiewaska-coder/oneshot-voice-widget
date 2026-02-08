@@ -19,37 +19,45 @@ export default function VoiceAgent() {
   const isConnectedRef = useRef(false);
   const { isMobile } = useViewport();
 
+  // THE BRAIN: ElevenLabs SDK handles the heavy lifting
   const conversation = useConversation({
     onConnect: () => {
-      console.log("[EL] Connected");
+      console.log("[DEBUG] WebSocket Connected");
       isConnectedRef.current = true;
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
-      console.log("[EL] Disconnected");
+      console.log("[DEBUG] WebSocket Disconnected");
       isConnectedRef.current = false;
       setConnectionStatus("disconnected");
       setInputVolume(0);
       setOutputVolume(0);
     },
     onMessage: (message) => {
-      console.log("[EL] Message:", message);
+      console.log("[DEBUG] Message Received:", message);
+      // Ensure we catch whatever text property ElevenLabs sends
+      const text = message.message || (message as any).text;
+      if (!text) return;
+
       const id = `msg-${messageIdCounter.current++}`;
       const role = message.source === "user" ? "user" : "agent";
-      setMessages((prev) => [...prev, { id, role, text: message.message, isFinal: true }]);
+      
+      // Update UI
+      setMessages((prev) => [...prev, { id, role, text, isFinal: true }]);
     },
     onError: (error) => {
-      console.error("[EL] Error:", error);
+      console.error("[DEBUG] ElevenLabs Error:", error);
       setConnectionStatus("disconnected");
     },
   });
 
+  // VOLUME POLLING (For the Orb visualization)
   const pollVolume = useCallback(() => {
     if (!isConnectedRef.current) return;
     try {
       setInputVolume(conversation.getInputVolume());
       setOutputVolume(conversation.getOutputVolume());
-    } catch {}
+    } catch (e) {}
     animFrameRef.current = requestAnimationFrame(pollVolume);
   }, [conversation]);
 
@@ -63,42 +71,72 @@ export default function VoiceAgent() {
   const handleConnect = useCallback(async () => {
     try {
       setConnectionStatus("connecting");
+      
+      // 1. Get the authenticated URL from your backend
       const res = await fetch("/api/get-signed-url");
+      if (!res.ok) throw new Error("Failed to get signed URL");
       const { signedUrl } = await res.json();
       
+      console.log("[DEBUG] Starting Session...");
+      
+      // 2. Start the conversation with a clean prompt
+      // We force Ray's persona here so it's not buried in complex history logic
       await conversation.startSession({ 
         signedUrl,
         overrides: {
           agent: {
-            prompt: { prompt: "You are Ray Shoesmith. Direct, dry, and efficient. Speak like a regular Aussie bloke. Keep it short." },
-            first_message: "Yeah, I'm here. What's the go?",
+            prompt: { prompt: "You are Ray Shoesmith. Direct, dry, and efficient. Speak like a regular Aussie bloke. Keep it short. Most importantly: RESPOND TO EVERY USER INPUT." },
+            first_message: "Yeah, it's Ray. I'm on the bike and ready. What've you got for me?",
           }
         }
       });
     } catch (error) {
-      console.error("Failed to connect:", error);
+      console.error("[DEBUG] Connection Flow Failed:", error);
       setConnectionStatus("disconnected");
     }
   }, [conversation]);
 
   const handleDisconnect = useCallback(async () => {
+    console.log("[DEBUG] Ending Session...");
     await conversation.endSession();
+  }, [conversation]);
+
+  const handleSendMessage = useCallback((text: string) => {
+    if (!isConnectedRef.current) return;
+    console.log("[DEBUG] Sending user text:", text);
+    
+    // Send to ElevenLabs
+    conversation.sendUserMessage(text);
+    
+    // Add to local UI immediately
+    const id = `msg-${messageIdCounter.current++}`;
+    setMessages(prev => [...prev, { id, role: "user", text, isFinal: true }]);
   }, [conversation]);
 
   return (
     <div className="relative w-full h-screen overflow-hidden bg-black">
-      <OrbBackground palette={5} inputVolume={inputVolume} outputVolume={outputVolume} isSpeaking={conversation.isSpeaking} isConnected={connectionStatus === "connected"} onPaletteChange={() => {}} isMobile={isMobile} lowPerformance={false} />
+      {/* Visual background and Orb */}
+      <OrbBackground 
+        palette={5} 
+        inputVolume={inputVolume} 
+        outputVolume={outputVolume} 
+        isSpeaking={conversation.isSpeaking} 
+        isConnected={connectionStatus === "connected"} 
+        onPaletteChange={() => {}} 
+        isMobile={isMobile} 
+        lowPerformance={false} 
+      />
+      
       <Logo />
+
+      {/* The actual chat window component */}
       <GlassChat 
         messages={messages} 
         status={connectionStatus} 
         isSpeaking={conversation.isSpeaking} 
         onConnect={handleConnect} 
         onDisconnect={handleDisconnect} 
-        onSendMessage={(text) => {
-          conversation.sendUserMessage(text);
-          setMessages(prev => [...prev, { id: `msg-${messageIdCounter.current++}`, role: "user", text, isFinal: true }]);
-        }} 
+        onSendMessage={handleSendMessage} 
         onClearMessages={() => setMessages([])} 
         onChatOpenChange={() => {}} 
       />
