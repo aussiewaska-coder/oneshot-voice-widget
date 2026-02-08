@@ -31,7 +31,6 @@ export default function VoiceAgent() {
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
   const isConnectedRef = useRef(false);
-  const contextInjectedRef = useRef(false);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -67,7 +66,6 @@ export default function VoiceAgent() {
     micMuted,
     onConnect: () => {
       isConnectedRef.current = true;
-      contextInjectedRef.current = false;
       setConnectionStatus("connected");
     },
     onDisconnect: () => {
@@ -122,41 +120,36 @@ export default function VoiceAgent() {
     };
   }, [connectionStatus, pollVolume]);
 
-  // Inject memory context once after connection is established
-  useEffect(() => {
-    if (connectionStatus !== "connected") return;
-    if (contextInjectedRef.current) return;
-    contextInjectedRef.current = true;
-
-    // Small delay to ensure the session is fully ready
-    const timer = setTimeout(() => {
-      fetch("/api/memory")
-        .then((r) => r.json())
-        .then((data) => {
-          if (data.contextPrompt && isConnectedRef.current) {
-            try {
-              conversation.sendContextualUpdate(data.contextPrompt);
-            } catch {
-              // Session may not be ready yet
-            }
-          }
-        })
-        .catch(() => {});
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [connectionStatus, conversation]);
-
   const handleConnect = useCallback(async () => {
     try {
       setConnectionStatus("connecting");
-      await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      const response = await fetch("/api/get-signed-url");
-      if (!response.ok) throw new Error("Failed to get signed URL");
-      const { signedUrl } = await response.json();
+      // Fetch signed URL, mic permission, and memory in parallel
+      const [urlRes, memRes] = await Promise.all([
+        fetch("/api/get-signed-url"),
+        fetch("/api/memory").catch(() => null),
+        navigator.mediaDevices.getUserMedia({ audio: true }),
+      ]);
 
-      await conversation.startSession({ signedUrl });
+      if (!urlRes.ok) throw new Error("Failed to get signed URL");
+      const { signedUrl } = await urlRes.json();
+
+      // Build overrides if we have conversation history
+      let overrides: Record<string, unknown> | undefined;
+      if (memRes && memRes.ok) {
+        const memData = await memRes.json();
+        if (memData.contextPrompt) {
+          overrides = {
+            agent: {
+              prompt: {
+                prompt: memData.contextPrompt,
+              },
+            },
+          };
+        }
+      }
+
+      await conversation.startSession({ signedUrl, overrides });
     } catch (error) {
       console.error("Failed to connect:", error);
       setConnectionStatus("disconnected");
