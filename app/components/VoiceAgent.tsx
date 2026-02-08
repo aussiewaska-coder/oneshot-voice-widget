@@ -42,6 +42,8 @@ export default function VoiceAgent() {
   const isConnectedRef = useRef(false);
   const contextInjectedRef = useRef(false);
   const pendingContextRef = useRef<string | null>(null);
+  const intentionalDisconnectRef = useRef(false);
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -107,6 +109,18 @@ export default function VoiceAgent() {
       isConnectedRef.current = false;
       stopPolling();
       setConnectionStatus("disconnected");
+
+      // Auto-reconnect if not intentional disconnect
+      if (!intentionalDisconnectRef.current) {
+        log?.(`[RECONNECT] auto-reconnecting in 2 seconds...`, "warning");
+        reconnectTimeoutRef.current = setTimeout(() => {
+          log?.(`[RECONNECT] attempting auto-reconnect...`, "debug");
+          handleConnect();
+        }, 2000);
+      } else {
+        // Reset flag for next disconnect
+        intentionalDisconnectRef.current = false;
+      }
     },
     onMessage: (message) => {
       const log = (window as any).hackerLog;
@@ -296,9 +310,18 @@ This is context from our previous conversation. Remember these details when resp
   }, [conversation]);
 
   const handleDisconnect = useCallback(async () => {
+    const log = (window as any).hackerLog;
+    // Mark as intentional disconnect so onDisconnect doesn't auto-reconnect
+    intentionalDisconnectRef.current = true;
+    // Clear any pending reconnect timeout
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
+    }
     isConnectedRef.current = false;
     stopPolling();
     await conversation.endSession();
+    log?.(`[DISCONNECT] user initiated`, "debug");
   }, [conversation, stopPolling]);
 
   const handleSendMessage = useCallback(
