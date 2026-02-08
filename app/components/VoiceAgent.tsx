@@ -40,6 +40,8 @@ export default function VoiceAgent() {
   const animFrameRef = useRef<number | null>(null);
   const messageIdCounter = useRef(0);
   const isConnectedRef = useRef(false);
+  const contextInjectedRef = useRef(false);
+  const pendingContextRef = useRef<string | null>(null);
 
   const stopPolling = useCallback(() => {
     if (animFrameRef.current) {
@@ -86,6 +88,18 @@ export default function VoiceAgent() {
       log?.(`[WEBSOCKET] connected to agent`, "success");
       isConnectedRef.current = true;
       setConnectionStatus("connected");
+
+      // Inject pending context immediately after connect
+      if (pendingContextRef.current && !contextInjectedRef.current) {
+        contextInjectedRef.current = true;
+        log?.(`[CONTEXT] injecting via sendContextualUpdate...`, "debug");
+        try {
+          conversation.sendContextualUpdate(pendingContextRef.current);
+          log?.(`[CONTEXT] ✓ sent`, "success");
+        } catch (err) {
+          log?.(`[CONTEXT] ✗ failed: ${err}`, "error");
+        }
+      }
     },
     onDisconnect: () => {
       const log = (window as any).hackerLog;
@@ -175,32 +189,22 @@ export default function VoiceAgent() {
       const { signedUrl } = await urlRes.json();
       log?.(`[SESSION] obtained signed url`, "success");
 
-      // Build overrides if we have conversation history
-      let overrides: Record<string, unknown> | undefined;
+      // Load conversation history for context injection
       if (memRes && memRes.ok) {
         const memData = await memRes.json();
         if (memData.contextPrompt) {
-          log?.(`[REDIS] ✓ BUILDING prompt override with ${memData.turns?.length || 0} conversation turns`, "success");
+          log?.(`[REDIS] ✓ LOADED ${memData.turns?.length || 0} turns for injection`, "success");
           log?.(`[REDIS] context size: ${memData.contextPrompt.length} chars`, "debug");
           log?.(`[REDIS] total lifetime turns: ${memData.totalTurns}`, "info");
-          if (memData.trimmedAt) {
-            log?.(`[REDIS] last trimmed: ${memData.trimmedAt}`, "debug");
-          }
-          overrides = {
-            agent: {
-              prompt: {
-                prompt: memData.contextPrompt,
-              },
-            },
-          };
+          pendingContextRef.current = memData.contextPrompt;
+          contextInjectedRef.current = false;
         } else {
           log?.(`[REDIS] → no prior context (fresh session)`, "debug");
         }
       }
 
-      log?.(`[SESSION] initiating websocket with redis context...`, "debug");
-      await conversation.startSession({ signedUrl, overrides });
-      log?.(`[REDIS] ✓ CONTEXT INJECTED into agent prompt`, "success");
+      log?.(`[SESSION] initiating websocket...`, "debug");
+      await conversation.startSession({ signedUrl });
     } catch (error) {
       const msg = error instanceof Error ? error.message : String(error);
       log?.(`[CONNECT] failed: ${msg}`, "error");
